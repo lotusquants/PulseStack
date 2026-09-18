@@ -8,7 +8,12 @@ import {
 	REST,
 	SHAPES,
 	TIER_NAME,
+	drawBlock,
+	drawFloorGhost,
+	drawLightShaft,
 	drawPulse,
+	drawShard,
+	drawVignette,
 	headlineFor,
 	makeCryptoRng,
 	mulberry32,
@@ -23,8 +28,19 @@ import {
 import type { GameAdapters, Unlocks } from '../adapters';
 
 type Block = { w: number; hue: number; q: number };
-type Shard = { x: number; y: number; w: number; vx: number; vy: number; a: number; hue: number };
+type Shard = {
+	x: number;
+	y: number;
+	w: number;
+	vx: number;
+	vy: number;
+	a: number;
+	hue: number;
+	rot: number;
+	spin: number;
+};
 type Float = { text: string; y: number; a: number; col: string };
+type Mote = { x: number; y: number; r: number; vx: number; vy: number; baseA: number };
 
 export type HudState = {
 	score: number;
@@ -102,7 +118,6 @@ export class GameEngine {
 	private beatIdx = 0;
 	private tapped = false;
 	private alive = false;
-	private flash = 0;
 	private camKick = 0;
 	private shakeX = 0;
 	private shakeY = 0;
@@ -130,6 +145,7 @@ export class GameEngine {
 	private prevW = 0;
 	private prevH = 0;
 	private destroyed = false;
+	private motes: Mote[] = [];
 
 	constructor(hooks: EngineHooks, adapters: GameAdapters) {
 		this.hooks = hooks;
@@ -292,14 +308,40 @@ export class GameEngine {
 	private impulseKick(amount: number) {
 		if (!this.reduceMotion) this.camKick = amount;
 	}
-	private impulseShake() {
+	private impulseShake(scale = 1) {
 		if (this.reduceMotion) return;
-		this.shakeX = (Math.random() < 0.5 ? -1 : 1) * 6;
-		this.shakeY = (Math.random() < 0.5 ? -1 : 1) * 4;
+		this.shakeX = (Math.random() < 0.5 ? -1 : 1) * 6 * scale;
+		this.shakeY = (Math.random() < 0.5 ? -1 : 1) * 4 * scale;
 	}
-	private impulseChroma() {
+	private impulseChroma(scale = 1) {
 		if (this.reduceMotion) return;
-		this.chromaX = (Math.random() < 0.5 ? -1 : 1) * 3;
+		this.chromaX = (Math.random() < 0.5 ? -1 : 1) * 3 * scale;
+	}
+
+	/** Hit-scaled camera / shake / chroma (Phase 1). */
+	private applyHitFeel(kind: 'perfect' | 'ok' | 'bad') {
+		if (kind === 'perfect') {
+			this.impulseKick(14 + this.feverTier * 3);
+			if (this.feverTier >= 2) this.impulseChroma(1 + this.feverTier * 0.15);
+		} else if (kind === 'ok') {
+			this.impulseKick(7);
+		} else {
+			this.impulseShake(1.15);
+			this.impulseKick(5);
+			this.impulseChroma(0.6);
+		}
+	}
+
+	private seedMotes() {
+		const n = this.reduceMotion ? 0 : 28;
+		this.motes = Array.from({ length: n }, () => ({
+			x: Math.random() * Math.max(1, this.W),
+			y: Math.random() * Math.max(1, this.H),
+			r: 0.6 + Math.random() * 1.4,
+			vx: (Math.random() - 0.5) * 0.12,
+			vy: -0.04 - Math.random() * 0.1,
+			baseA: 0.08 + Math.random() * 0.14,
+		}));
 	}
 
 	private groundY = () => this.H * 0.78;
@@ -316,7 +358,6 @@ export class GameEngine {
 		this.edgeGlow = 0;
 		this.pastPeak = false;
 		this.alive = true;
-		this.flash = 0;
 		this.camKick = 0;
 		this.shakeX = 0;
 		this.shakeY = 0;
@@ -325,6 +366,7 @@ export class GameEngine {
 		this.beatLen = periodFor(1, this.rng, MIN_PERIOD, REST);
 		this.tapped = false;
 		this.cam = this.camTarget = 0;
+		this.seedMotes();
 		this.patchHud({ score: 0 });
 		this.syncStreakHud();
 	}
@@ -332,14 +374,16 @@ export class GameEngine {
 	private applyFeverEnter(tier: number, y: number) {
 		this.feverTier = tier;
 		if (tier >= 2) this.edgeGlow = 1;
-		if (tier >= 3) this.impulseChroma();
+		if (tier >= 3) this.impulseChroma(1.2);
 		this.pushFloat(TIER_NAME[tier], y - 20, tier >= 4 ? '#FFE8A8' : HOT);
 		this.adapters.audio.chordStab(tier, this.sound);
+		this.adapters.haptics.pulse(tier >= 3 ? [10, 16, 22] : 14);
 	}
 
 	private onStreakBreak(y: number) {
 		if (this.feverTier > 0) {
 			this.adapters.audio.coolCue(this.sound);
+			this.adapters.haptics.pulse([18, 30, 18]);
 			this.pushFloat('cooled', y, COOL);
 		}
 		this.feverTier = 0;
@@ -370,10 +414,9 @@ export class GameEngine {
 				this.teaching = false;
 				this.adapters.sheets.setCoach(this.el('coach'), false);
 				this.patchHud({ coachOn: false });
-				this.adapters.haptics.pulse(12);
+				this.adapters.haptics.pulse(10);
 				this.reset();
-				this.flash = 1;
-				this.impulseKick(14);
+				this.applyHitFeel('perfect');
 				this.pushFloat('Early or late shrinks the block.', this.groundY() - 48, P);
 				this.taps = [];
 				this.beat0 = this.beatIdx;
@@ -389,14 +432,14 @@ export class GameEngine {
 			} else {
 				this.onStreakBreak(this.towerTopY(n));
 				this.syncStreakHud();
-				if (kind === 'bad') this.impulseShake();
+				this.applyHitFeel(kind === 'bad' ? 'bad' : 'ok');
 				if (q > 0.55)
 					this.pushFloat(
 						phase < 0.5 ? 'EARLY' : 'LATE',
 						this.towerTopY(n),
 						phase < 0.5 ? COOL : 'rgba(242,166,90,.85)'
 					);
-				this.adapters.haptics.pulse(kind === 'bad' ? [30, 20, 30] : 6);
+				this.adapters.haptics.pulse(kind === 'bad' ? [28, 40, 28] : 8);
 			}
 			return;
 		}
@@ -409,20 +452,20 @@ export class GameEngine {
 			this.maxStreak = Math.max(this.maxStreak, this.streak);
 			const next = tierOf(this.streak);
 			if (next > this.feverTier) this.applyFeverEnter(next, this.towerTopY(n));
-			this.flash = Math.min(1.5, 1 + Math.min(this.streak, 12) * 0.05 + this.feverTier * 0.04);
-			this.impulseKick(14 + this.feverTier * 3);
+			this.applyHitFeel('perfect');
+			this.adapters.haptics.pulse([8, 12, 16]);
 		} else {
 			this.onStreakBreak(this.towerTopY(n));
-			if (kind === 'bad') this.impulseShake();
+			this.applyHitFeel(kind === 'bad' ? 'bad' : 'ok');
 			if (q > 0.55)
 				this.pushFloat(
 					phase < 0.5 ? 'EARLY' : 'LATE',
 					this.towerTopY(n),
 					phase < 0.5 ? COOL : 'rgba(242,166,90,.85)'
 				);
+			this.adapters.haptics.pulse(kind === 'bad' ? [32, 45, 32] : 10);
 		}
 		this.syncStreakHud();
-		this.adapters.haptics.pulse(kind === 'perfect' ? 12 : kind === 'bad' ? [30, 20, 30] : 6);
 		if (w < floor - 1) {
 			const side = (floor - w) / 2,
 				y = this.towerTopY(n);
@@ -430,19 +473,23 @@ export class GameEngine {
 				x: this.W / 2 - floor / 2,
 				y,
 				w: side,
-				vx: -1.4,
-				vy: -1.5,
+				vx: -1.6 - Math.random() * 0.6,
+				vy: -1.8 - Math.random() * 0.8,
 				a: 1,
 				hue: this.blocks[n - 1].hue,
+				rot: 0,
+				spin: -0.08 - Math.random() * 0.06,
 			});
 			this.shards.push({
 				x: this.W / 2 + w / 2,
 				y,
 				w: side,
-				vx: 1.4,
-				vy: -1.5,
+				vx: 1.6 + Math.random() * 0.6,
+				vy: -1.8 - Math.random() * 0.8,
 				a: 1,
 				hue: this.blocks[n - 1].hue,
+				rot: 0,
+				spin: 0.08 + Math.random() * 0.06,
 			});
 		}
 		this.blocks.push({ w, hue: this.blockHue(n), q });
@@ -453,8 +500,28 @@ export class GameEngine {
 				const gw = this.bestTower[i] * this.W,
 					y = this.towerTopY(i + 1),
 					hue = this.blockHue(i);
-				this.shards.push({ x: this.W / 2 - gw / 2, y, w: 10, vx: -2.2, vy: -2, a: 0.9, hue });
-				this.shards.push({ x: this.W / 2 + gw / 2 - 10, y, w: 10, vx: 2.2, vy: -2, a: 0.9, hue });
+				this.shards.push({
+					x: this.W / 2 - gw / 2,
+					y,
+					w: 10,
+					vx: -2.2,
+					vy: -2,
+					a: 0.9,
+					hue,
+					rot: 0,
+					spin: -0.1,
+				});
+				this.shards.push({
+					x: this.W / 2 + gw / 2 - 10,
+					y,
+					w: 10,
+					vx: 2.2,
+					vy: -2,
+					a: 0.9,
+					hue,
+					rot: 0,
+					spin: 0.1,
+				});
 			}
 		if (n === 10 || n === 25 || n === 50) this.pushFloat(String(n), this.towerTopY(n) - 18, P);
 		if (n === this.best + 1)
@@ -581,6 +648,9 @@ export class GameEngine {
 		if (this.running && this.alive && !this.paused && this.tNow >= 0.5 && !this.pastPeak) {
 			this.pastPeak = true;
 			this.adapters.audio.tick(this.sound, this.feverTier);
+			if (!this.reduceMotion && this.feverTier >= 2) {
+				this.adapters.haptics.pulse(this.feverTier >= 3 ? 12 : 5);
+			}
 		}
 		this.camTarget = Math.max(0, this.H * 0.45 - this.towerTopY(this.blocks.length));
 		this.cam += (this.camTarget - this.cam) * 0.12;
@@ -588,7 +658,6 @@ export class GameEngine {
 			this.cam += this.camKick;
 			this.camKick = 0;
 		}
-		this.flash *= 0.86;
 		this.shakeX *= 0.78;
 		this.shakeY *= 0.78;
 		this.chromaX *= 0.85;
@@ -599,8 +668,7 @@ export class GameEngine {
 
 		const ctx = this.ctx;
 		ctx.clearRect(0, 0, this.W, this.H);
-		const glow =
-			0.1 + this.flash * (0.35 + Math.min(this.streak, 8) * 0.02 + this.feverTier * 0.03);
+		const glow = 0.1;
 		const g = ctx.createRadialGradient(
 			this.W / 2,
 			this.H * 0.85,
@@ -618,6 +686,28 @@ export class GameEngine {
 		}
 		ctx.fillStyle = g;
 		ctx.fillRect(0, 0, this.W, this.H);
+
+		drawLightShaft(ctx, this.W, this.H, atRisk);
+
+		// Ambient motes
+		if (this.motes.length && this.W > 0) {
+			for (const m of this.motes) {
+				if (!this.reduceMotion) {
+					m.x += m.vx;
+					m.y += m.vy;
+					if (m.y < -4) m.y = this.H + 4;
+					if (m.x < -4) m.x = this.W + 4;
+					if (m.x > this.W + 4) m.x = -4;
+				}
+				ctx.globalAlpha = m.baseA;
+				ctx.fillStyle = atRisk ? 'rgba(158,208,224,1)' : 'rgba(255,210,122,1)';
+				ctx.beginPath();
+				ctx.arc(m.x, m.y, m.r, 0, 7);
+				ctx.fill();
+			}
+			ctx.globalAlpha = 1;
+		}
+
 		const edgeOn = this.edgeGlow > 0.02;
 		if (edgeOn) {
 			const eg = ctx.createLinearGradient(0, 0, 0, this.H);
@@ -663,24 +753,31 @@ export class GameEngine {
 		}
 		for (let i = 0; i < this.blocks.length; i++) {
 			const b = this.blocks[i];
-			ctx.fillStyle = `hsl(${b.hue} 72% ${b.q === 1 ? 62 : b.q > 0.7 ? 56 : 44}%)`;
-			ctx.fillRect(
-				Math.round(this.W / 2 - b.w / 2),
-				this.towerTopY(i + 1),
-				Math.max(1, Math.round(b.w)),
-				BH - 1
-			);
+			drawBlock(ctx, {
+				cx: this.W / 2,
+				y: this.towerTopY(i + 1),
+				w: b.w,
+				h: BH - 1,
+				hue: b.hue,
+				q: b.q,
+			});
 		}
 		for (const s of this.shards) {
 			s.x += s.vx;
 			s.vy += 0.35;
 			s.y += s.vy;
-			s.a -= 0.025;
-			ctx.globalAlpha = Math.max(0, s.a);
-			ctx.fillStyle = `hsl(${s.hue} 60% 40%)`;
-			ctx.fillRect(s.x, s.y, s.w, BH - 1);
+			s.rot += s.spin;
+			s.a -= 0.022;
+			drawShard(ctx, {
+				x: s.x,
+				y: s.y,
+				w: s.w,
+				h: BH - 1,
+				hue: s.hue,
+				a: s.a,
+				rot: s.rot,
+			});
 		}
-		ctx.globalAlpha = 1;
 		this.shards = this.shards.filter((s) => s.a > 0);
 		for (const f of this.floats) {
 			f.a -= 0.018;
@@ -694,6 +791,12 @@ export class GameEngine {
 		}
 		ctx.globalAlpha = 1;
 		this.floats = this.floats.filter((f) => f.a > 0);
+
+		// Previous floor ghost under live pulse
+		if (this.running && this.alive) {
+			const topY = this.towerTopY(this.blocks.length);
+			drawFloorGhost(ctx, this.W / 2, topY, fw, BH, atRisk);
+		}
 		ctx.restore();
 
 		drawPulse(
@@ -712,14 +815,11 @@ export class GameEngine {
 		);
 		ctx.fillStyle = INK + '.25)';
 		ctx.fillRect(this.W / 2 - fw / 2, this.H - 6, fw, 2);
-		if (this.flash > 0.01 && !edgeOn) {
-			ctx.fillStyle = `rgba(255,210,122,${Math.min(0.32, this.flash * (0.18 + Math.min(this.streak, 8) * 0.01 + this.feverTier * 0.015))})`;
-			ctx.fillRect(0, 0, this.W, this.H);
-		}
 		if (atRisk) {
 			ctx.fillStyle = 'rgba(111,175,198,.06)';
 			ctx.fillRect(0, 0, this.W, this.H);
 		}
+		drawVignette(ctx, this.W, this.H, 0.2);
 
 		const options = this.el('options');
 		const start = this.el('start');
@@ -775,8 +875,14 @@ export class GameEngine {
 			bh = BH,
 			gy = h * 0.78;
 		for (let i = 0; i < 3; i++) {
-			c.fillStyle = `hsl(${this.blockHue(i)} 72% ${56 - i}%)`;
-			c.fillRect(w / 2 - floor / 2, gy - (i + 1) * bh, floor, bh - 1);
+			drawBlock(c, {
+				cx: w / 2,
+				y: gy - (i + 1) * bh,
+				w: floor,
+				h: bh - 1,
+				hue: this.blockHue(i),
+				q: 1,
+			});
 		}
 		drawPulse(
 			c,
@@ -815,8 +921,14 @@ export class GameEngine {
 				bh = BH,
 				gy = h * 0.74;
 			for (let i = 0; i < 3; i++) {
-				c.fillStyle = `hsl(${this.blockHue(i)} 72% ${56 - i}%)`;
-				c.fillRect(w / 2 - floor / 2, gy - (i + 1) * bh, floor, bh - 1);
+				drawBlock(c, {
+					cx: w / 2,
+					y: gy - (i + 1) * bh,
+					w: floor,
+					h: bh - 1,
+					hue: this.blockHue(i),
+					q: 1,
+				});
 			}
 			drawPulse(
 				c,
@@ -847,6 +959,7 @@ export class GameEngine {
 		cv.height = this.H * dpr;
 		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		if (this.blocks && sc !== 1) this.blocks.forEach((b) => (b.w *= sc));
+		this.seedMotes();
 		const start = this.el('start');
 		if (start && !start.hidden) this.sizePulsePrev();
 	}

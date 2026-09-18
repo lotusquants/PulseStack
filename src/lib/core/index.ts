@@ -10,5 +10,11 @@ export {
 export type { Rng, Tap, ReplayResult } from './replay';
 export { BH, INK, P, HOT, COOL, TIER_NAME, SHAPES, tierOf, headlineFor } from './constants';
 export type { ShapeId, PlayMode } from './constants';
-export type { LbEntry, StartRequest, StartResponse, ScoreRequest, ScoreResponse } from './lbApi';
-export { drawPulse } from './draw';
+export type {
+	LbEntry,
+	StartRequest,
+	StartResponse,
+	ScoreRequest,
+	ScoreResponse,
+} from './lbApi';
+export { drawPulse, drawBlock, drawShard, drawLightShaft, drawVignette, drawFloorGhost } from './draw';

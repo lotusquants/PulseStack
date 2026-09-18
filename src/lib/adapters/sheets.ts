@@ -1,4 +1,4 @@
-const SHEET_MS = 200;
+const SHEET_MS = 260;
 
 export function prefersReducedMotion(): boolean {
 	return matchMedia('(prefers-reduced-motion: reduce)').matches;
