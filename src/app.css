@@ -56,6 +56,7 @@ body {
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
 	letter-spacing: -0.03em;
+	text-shadow: 0 2px 20px rgba(7, 10, 18, 0.55);
 }
 .hud small {
 	display: block;
@@ -64,18 +65,22 @@ body {
 	text-transform: uppercase;
 	color: var(--dim);
 	margin-top: 6px;
+	opacity: 0.85;
 }
 .hud .best {
 	text-align: right;
 	font-size: 20px;
 	font-weight: 500;
 	color: var(--dim);
+	opacity: 0.9;
 }
 .hud .streak {
 	color: var(--pulse);
 	letter-spacing: 0.08em;
 	min-height: 1em;
 	font-weight: 600;
+	font-size: 12px;
+	opacity: 0.92;
 }
 .overlay {
 	position: absolute;
@@ -88,10 +93,10 @@ body {
 	padding: 28px;
 	padding-block: calc(env(safe-area-inset-top) + 28px) calc(env(safe-area-inset-bottom) + 28px);
 	gap: 14px;
-	background: linear-gradient(180deg, rgba(7, 10, 18, 0.42), rgba(7, 10, 18, 0.94));
+	background: linear-gradient(180deg, rgba(7, 10, 18, 0.38), rgba(7, 10, 18, 0.96));
 	transition:
-		opacity 180ms var(--ease-out),
-		transform 180ms var(--ease-out);
+		opacity 240ms var(--ease-out),
+		transform 240ms var(--ease-out);
 }
 .overlay[hidden] {
 	display: none;
@@ -99,19 +104,19 @@ body {
 .overlay.is-out {
 	animation: none !important;
 	opacity: 0;
-	transform: translateY(8px);
+	transform: translateY(12px);
 	pointer-events: none;
 }
 #over:not([hidden]),
 #options:not([hidden]),
 #lb:not([hidden]),
 #menu:not([hidden]) {
-	animation: sheetIn 220ms var(--ease-out) both;
+	animation: sheetIn 280ms var(--ease-out) both;
 }
 @keyframes sheetIn {
 	from {
 		opacity: 0;
-		transform: translateY(10px);
+		transform: translateY(14px);
 	}
 	to {
 		opacity: 1;
@@ -200,10 +205,11 @@ body {
 h1 {
 	font-family: var(--display);
 	font-weight: 700;
-	font-size: clamp(42px, 12vw, 56px);
+	font-size: clamp(44px, 12vw, 58px);
 	margin: 0;
 	letter-spacing: -0.04em;
 	line-height: 0.95;
+	text-shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
 }
 h1 span {
 	color: var(--pulse);
@@ -211,31 +217,33 @@ h1 span {
 h2 {
 	font-family: var(--display);
 	font-weight: 700;
-	font-size: 34px;
+	font-size: 32px;
 	margin: 0;
 	letter-spacing: -0.03em;
 	line-height: 1.05;
 }
 .overlay p {
 	margin: 0;
-	max-width: 28ch;
+	max-width: 26ch;
 	color: var(--dim);
 	font-size: 13px;
 	line-height: 1.55;
 }
 #start .tag {
-	max-width: 20ch;
+	max-width: 18ch;
 	font-size: 15px;
-	line-height: 1.4;
-	color: rgba(244, 240, 232, 0.72);
+	line-height: 1.45;
+	color: rgba(244, 240, 232, 0.68);
+	letter-spacing: 0.01em;
 }
 .big {
-	font-size: 76px;
+	font-size: 80px;
 	color: var(--pulse);
 	font-variant-numeric: tabular-nums;
 	font-weight: 500;
 	line-height: 1;
 	letter-spacing: -0.04em;
+	text-shadow: 0 6px 40px rgba(242, 166, 90, 0.25);
 }
 .board {
 	font-size: 12px !important;
@@ -274,7 +282,11 @@ h2 {
 	min-height: 1.2em;
 }
 #over {
-	gap: 14px;
+	gap: 12px;
+}
+#over h2 {
+	max-width: 16ch;
+	margin-inline: auto;
 }
 #over #again {
 	width: 100%;
@@ -319,7 +331,8 @@ button {
 	margin-top: 8px;
 	transition:
 		transform 160ms var(--ease-out),
-		filter 160ms var(--ease-out);
+		filter 160ms var(--ease-out),
+		box-shadow 160ms var(--ease-out);
 }
 button.ghost {
 	background: transparent;
@@ -327,8 +340,13 @@ button.ghost {
 	border: 1px solid var(--line);
 	margin-top: 0;
 }
+button.ghost:active {
+	color: var(--ink);
+	border-color: rgba(244, 240, 232, 0.22);
+}
 button:active {
 	transform: scale(0.97);
+	filter: brightness(1.05);
 }
 #go {
 	width: 100%;
@@ -336,6 +354,9 @@ button:active {
 	min-height: 54px;
 	margin-top: 0;
 	box-shadow: 0 10px 28px rgba(242, 166, 90, 0.22);
+}
+#go:active {
+	box-shadow: 0 6px 18px rgba(242, 166, 90, 0.18);
 }
 #pulsePrev {
 	width: 132px;
@@ -387,15 +408,15 @@ button:active {
 	pointer-events: none;
 	font-family: var(--display);
 	font-weight: 700;
-	font-size: 17px;
+	font-size: 18px;
 	letter-spacing: 0.02em;
 	color: var(--hot);
-	text-shadow: 0 2px 18px rgba(7, 10, 18, 0.85);
+	text-shadow: 0 2px 22px rgba(7, 10, 18, 0.9);
 	opacity: 0;
 	visibility: hidden;
 	transition:
-		opacity 200ms var(--ease-out),
-		visibility 200ms var(--ease-out);
+		opacity 240ms var(--ease-out),
+		visibility 240ms var(--ease-out);
 }
 .coach.is-on {
 	opacity: 1;
