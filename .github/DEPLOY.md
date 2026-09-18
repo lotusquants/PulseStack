@@ -1,12 +1,14 @@
 # Cloudflare deploy checklist (Pages + Worker)
+
 #
+
 # You add secrets/vars in GitHub — CI never needs interactive `wrangler login`.
 
 ## Secrets (Settings → Secrets and variables → Actions → Secrets)
 
-| Name | Value |
-|------|--------|
-| `CLOUDFLARE_API_TOKEN` | API token (see below) |
+| Name                    | Value                                                |
+| ----------------------- | ---------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | API token (see below)                                |
 | `CLOUDFLARE_ACCOUNT_ID` | Account ID from Cloudflare dashboard URL or Overview |
 
 ### Create the API token
@@ -20,10 +22,10 @@
 
 ## Variables (Settings → Secrets and variables → Actions → Variables)
 
-| Name | Example | Required |
-|------|---------|----------|
-| `PUBLIC_LB_URL` | `https://pulsestack-lb.<your-subdomain>.workers.dev` | Yes for Pages build (no trailing slash) |
-| `CF_PAGES_PROJECT` | `pulsestack` | No (defaults to `pulsestack`) |
+| Name               | Example                                              | Required                                |
+| ------------------ | ---------------------------------------------------- | --------------------------------------- |
+| `PUBLIC_LB_URL`    | `https://pulsestack-lb.<your-subdomain>.workers.dev` | Yes for Pages build (no trailing slash) |
+| `CF_PAGES_PROJECT` | `pulsestack`                                         | No (defaults to `pulsestack`)           |
 
 After the first Worker deploy, copy the Worker URL from the Actions log / Cloudflare dashboard into `PUBLIC_LB_URL`, then re-run **deploy** (or push) so Pages bakes in the correct LB URL.
 
@@ -41,10 +43,10 @@ After the first Worker deploy, copy the Worker URL from the Actions log / Cloudf
 
 On every push to `main` / `master` (and on manual **workflow_dispatch**):
 
-| Job | Deploys |
-|-----|---------|
-| Cloudflare Pages | SvelteKit `build/` → Pages project |
-| Cloudflare Worker | `worker/` → `pulsestack-lb` |
+| Job               | Deploys                            |
+| ----------------- | ---------------------------------- |
+| Cloudflare Pages  | SvelteKit `build/` → Pages project |
+| Cloudflare Worker | `worker/` → `pulsestack-lb`        |
 
 Workflow: [`.github/workflows/deploy.yml`](workflows/deploy.yml)
 

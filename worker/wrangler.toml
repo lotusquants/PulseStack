@@ -1,5 +1,5 @@
 name = "pulsestack-lb"
-main = "worker.js"
+main = "src/index.ts"
 compatibility_date = "2026-09-01"
 
 [[d1_databases]]

@@ -5,18 +5,18 @@ const config: CapacitorConfig = {
 	appName: 'Pulse Stack',
 	webDir: 'build',
 	server: {
-		androidScheme: 'https'
+		androidScheme: 'https',
 	},
 	plugins: {
 		SplashScreen: {
 			launchAutoHide: true,
-			backgroundColor: '#070A12'
+			backgroundColor: '#070A12',
 		},
 		StatusBar: {
 			style: 'DARK',
-			backgroundColor: '#070A12'
-		}
-	}
+			backgroundColor: '#070A12',
+		},
+	},
 };
 
 export default config;

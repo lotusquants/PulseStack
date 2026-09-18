@@ -38,7 +38,11 @@ export async function shareCard(opts: {
 	const sn = SHAPES.find((s) => s.id === shape);
 	g.fillStyle = '#8C93A8';
 	g.font = '14px ui-monospace,monospace';
-	g.fillText((playMode === 'daily' ? 'Daily · ' : '') + (sn ? sn.name : shape) + ' · ' + who, 360, 560);
+	g.fillText(
+		(playMode === 'daily' ? 'Daily · ' : '') + (sn ? sn.name : shape) + ' · ' + who,
+		360,
+		560
+	);
 	g.fillStyle = '#8C93A8';
 	g.font = '12px ui-monospace,monospace';
 	g.fillText('pulsestack', 360, 820);

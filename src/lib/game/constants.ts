@@ -1,6 +1,5 @@
+export { MIN_PERIOD, REST } from './replay';
 export const BH = 16;
-export const REST = 1200;
-export const MIN_PERIOD = 430;
 export const INK = 'rgba(244,240,232,';
 export const P = '#F2A65A';
 export const HOT = '#FFD27A';
@@ -8,7 +7,7 @@ export const COOL = 'rgba(111,175,198,.55)';
 export const TIER_NAME = ['', 'WARM', 'HOT', 'FEVER', 'OVERDRIVE'] as const;
 export const SHAPES = [
 	{ id: 'ghost' as const, name: 'Ghost' },
-	{ id: 'circle' as const, name: 'Circle' }
+	{ id: 'circle' as const, name: 'Circle' },
 ];
 export type ShapeId = (typeof SHAPES)[number]['id'];
 export type PlayMode = 'endless' | 'daily';
