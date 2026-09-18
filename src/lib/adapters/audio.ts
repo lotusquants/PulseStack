@@ -91,23 +91,11 @@ export function tone(kind: string, n: number, sound: boolean, feverTier: number)
 	} else if (kind === 'ok') hihat(a, t, 0.06 + feverTier * 0.02);
 }
 
-export function tick(sound: boolean, feverTier: number, holdBeat: boolean) {
+export function tick(sound: boolean, feverTier: number) {
 	if (!sound) return;
 	const a = audio(),
 		t = a.currentTime,
 		tier = feverTier;
-	if (holdBeat) {
-		const o = a.createOscillator(),
-			g = a.createGain();
-		o.type = 'triangle';
-		o.frequency.setValueAtTime(220, t);
-		g.gain.setValueAtTime(0.08, t);
-		g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-		o.connect(g).connect(a.destination);
-		o.start(t);
-		o.stop(t + 0.18);
-		return;
-	}
 	if (tier === 0) {
 		const o = a.createOscillator(),
 			g = a.createGain();

@@ -19,11 +19,11 @@ export const lbGet = (mode: PlayMode = 'endless'): LbEntry[] => {
 export const lbRank = (l: LbEntry[], pid: string, n: number) =>
 	l.findIndex((e) => e.id === pid.slice(0, 4) && e.n === n) + 1;
 
-export async function postStart(pid: string, mode: PlayMode): Promise<Partial<StartResponse>> {
+export async function postStart(pid: string): Promise<Partial<StartResponse>> {
 	const r = await fetch(LB_URL + '/start', {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify({ pid, mode }),
+		body: JSON.stringify({ pid }),
 	});
 	return r.json() as Promise<Partial<StartResponse>>;
 }

@@ -1,7 +1,7 @@
 import type { PlayMode, ShapeId } from '../core/constants';
 import type { LbEntry, ScoreRequest, ScoreResponse, StartResponse } from '../core/lbApi';
 
-export type Unlocks = { skins: Set<string>; palette: boolean };
+export type Unlocks = { skins: Set<string> };
 
 /** Persistent key/value store (localStorage today). */
 export type StoragePort = {
@@ -18,7 +18,7 @@ export type StoragePort = {
 export type AudioPort = {
 	unlock: () => void;
 	tone: (kind: string, n: number, sound: boolean, feverTier: number) => void;
-	tick: (sound: boolean, feverTier: number, holdBeat: boolean) => void;
+	tick: (sound: boolean, feverTier: number) => void;
 	chordStab: (tier: number, sound: boolean) => void;
 	coolCue: (sound: boolean) => void;
 };
@@ -35,7 +35,6 @@ export type SharePort = {
 	shareCard: (opts: {
 		lastScore: number;
 		lastPerfectPct: number;
-		playMode: PlayMode;
 		shape: ShapeId;
 		who: string;
 	}) => Promise<void>;
@@ -45,7 +44,7 @@ export type LeaderboardPort = {
 	getLocal: (mode?: PlayMode) => LbEntry[];
 	addLocal: (pid: string, mode: PlayMode, name: string, n: number) => number;
 	rank: (l: LbEntry[], pid: string, n: number) => number;
-	postStart: (pid: string, mode: PlayMode) => Promise<Partial<StartResponse>>;
+	postStart: (pid: string) => Promise<Partial<StartResponse>>;
 	postScore: (body: ScoreRequest) => Promise<Partial<ScoreResponse> & { error?: string }>;
 	fetchBoard: (mode: PlayMode) => Promise<LbEntry[] | null>;
 	saveBoards: (lifetime: LbEntry[], daily: LbEntry[]) => void;

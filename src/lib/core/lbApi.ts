@@ -4,7 +4,6 @@ export type LbEntry = { id: string; name: string; n: number };
 
 export type StartRequest = {
 	pid: string;
-	mode?: 'endless' | 'daily';
 };
 
 export type StartResponse = {

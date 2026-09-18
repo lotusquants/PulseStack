@@ -21,15 +21,15 @@ export type { Unlocks };
 
 export function loadUnlocks(): Unlocks {
 	try {
-		const u = JSON.parse(pref('unlocks', '{"skins":[],"palette":false}'));
-		return { skins: new Set(), palette: !!u.palette };
+		const u = JSON.parse(pref('unlocks', '{"skins":[]}'));
+		return { skins: new Set(Array.isArray(u.skins) ? u.skins : []) };
 	} catch {
-		return { skins: new Set(), palette: false };
+		return { skins: new Set() };
 	}
 }
 
 export function saveUnlocks(unlocks: Unlocks) {
-	save('unlocks', JSON.stringify({ skins: [], palette: unlocks.palette }));
+	save('unlocks', JSON.stringify({ skins: [...unlocks.skins] }));
 }
 
 export function loadBestTower(): number[] {

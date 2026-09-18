@@ -10,5 +10,5 @@
 		"noEmit": true,
 		"isolatedModules": true
 	},
-	"include": ["src/**/*.ts", "../src/lib/game/replay.ts", "../src/lib/game/lbApi.ts"]
+	"include": ["src/**/*.ts", "../src/lib/core/replay.ts", "../src/lib/core/lbApi.ts"]
 }

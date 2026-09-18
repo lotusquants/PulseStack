@@ -1,14 +1,13 @@
 import { Cap } from './platform';
-import { SHAPES, type PlayMode, type ShapeId } from '../core/constants';
+import { SHAPES, type ShapeId } from '../core/constants';
 
 export async function shareCard(opts: {
 	lastScore: number;
 	lastPerfectPct: number;
-	playMode: PlayMode;
 	shape: ShapeId;
 	who: string;
 }) {
-	const { lastScore, lastPerfectPct, playMode, shape, who } = opts;
+	const { lastScore, lastPerfectPct, shape, who } = opts;
 	const c = document.createElement('canvas');
 	c.width = 720;
 	c.height = 900;
@@ -39,7 +38,7 @@ export async function shareCard(opts: {
 	g.fillStyle = '#8C93A8';
 	g.font = '14px ui-monospace,monospace';
 	g.fillText(
-		(playMode === 'daily' ? 'Daily · ' : '') + (sn ? sn.name : shape) + ' · ' + who,
+		(sn ? sn.name : shape) + ' · ' + who,
 		360,
 		560
 	);
@@ -51,7 +50,7 @@ export async function shareCard(opts: {
 	if (!blob) return;
 	const file = new File([blob], 'pulsestack.png', { type: 'image/png' });
 	const text =
-		`PulseStack ${lastScore} · ${lastPerfectPct}% peak` + (playMode === 'daily' ? ' · Daily' : '');
+		`PulseStack ${lastScore} · ${lastPerfectPct}% peak`;
 
 	if (Cap.isNative) {
 		try {

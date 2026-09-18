@@ -32,7 +32,7 @@
 			board: '',
 			shareOn: false,
 		},
-		lb: { title: 'Leaderboard', modeLabel: 'Daily', entries: [], pidShort: '' },
+		lb: { title: 'All-time', modeLabel: 'Today', entries: [], pidShort: '' },
 	};
 
 	function mergeHud(patch: Partial<HudState>) {
@@ -68,7 +68,7 @@
 			}
 			if (e.code !== 'Space' || (e.target as HTMLElement).tagName === 'INPUT') return;
 			e.preventDefault();
-			if (!engine.startHidden) engine.begin('endless');
+			if (!engine.startHidden) engine.begin();
 			else if (!engine.overHidden) engine.again();
 			else if (!engine.isPaused) engine.tap();
 		};
@@ -157,10 +157,7 @@
 				bind:value={nameInput}
 				oninput={() => engine?.setName(nameInput)}
 			/>
-			<button type="button" id="go" onclick={() => engine?.begin('endless')}>Start</button>
-			<button type="button" class="ghost" id="daily" onclick={() => engine?.begin('daily')}
-				>Daily</button
-			>
+			<button type="button" id="go" onclick={() => engine?.begin()}>Start</button>
 		</div>
 		<div class="homeBar">
 			<button type="button" id="lbBtn" onclick={() => engine?.showLb('start')}>Board</button>

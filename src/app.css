@@ -337,12 +337,6 @@ button:active {
 	margin-top: 0;
 	box-shadow: 0 10px 28px rgba(242, 166, 90, 0.22);
 }
-#daily {
-	width: 100%;
-	max-width: 320px;
-	min-height: 48px;
-	margin-top: 0;
-}
 #pulsePrev {
 	width: 132px;
 	height: 132px;

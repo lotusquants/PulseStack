@@ -8,6 +8,7 @@ export const TIER_NAME = ['', 'WARM', 'HOT', 'FEVER', 'OVERDRIVE'] as const;
 export const SHAPES = [
 	{ id: 'ghost' as const, name: 'Ghost' },
 	{ id: 'circle' as const, name: 'Circle' },
+	{ id: 'pendulum' as const, name: 'Pendulum' },
 ];
 export type ShapeId = (typeof SHAPES)[number]['id'];
 export type PlayMode = 'endless' | 'daily';
