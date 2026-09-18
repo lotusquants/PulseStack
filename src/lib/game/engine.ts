@@ -118,8 +118,6 @@ export class GameEngine {
 	private beatIdx = 0;
 	private tapped = false;
 	private alive = false;
-	private flash = 0;
-	private peakBloom = 0;
 	private camKick = 0;
 	private shakeX = 0;
 	private shakeY = 0;
@@ -327,7 +325,6 @@ export class GameEngine {
 			if (this.feverTier >= 2) this.impulseChroma(1 + this.feverTier * 0.15);
 		} else if (kind === 'ok') {
 			this.impulseKick(7);
-			this.flash = Math.max(this.flash, 0.45);
 		} else {
 			this.impulseShake(1.15);
 			this.impulseKick(5);
@@ -361,8 +358,6 @@ export class GameEngine {
 		this.edgeGlow = 0;
 		this.pastPeak = false;
 		this.alive = true;
-		this.flash = 0;
-		this.peakBloom = 0;
 		this.camKick = 0;
 		this.shakeX = 0;
 		this.shakeY = 0;
@@ -421,7 +416,6 @@ export class GameEngine {
 				this.patchHud({ coachOn: false });
 				this.adapters.haptics.pulse(10);
 				this.reset();
-				this.flash = 1;
 				this.applyHitFeel('perfect');
 				this.pushFloat('Early or late shrinks the block.', this.groundY() - 48, P);
 				this.taps = [];
@@ -458,7 +452,6 @@ export class GameEngine {
 			this.maxStreak = Math.max(this.maxStreak, this.streak);
 			const next = tierOf(this.streak);
 			if (next > this.feverTier) this.applyFeverEnter(next, this.towerTopY(n));
-			this.flash = Math.min(1.5, 1 + Math.min(this.streak, 12) * 0.05 + this.feverTier * 0.04);
 			this.applyHitFeel('perfect');
 			this.adapters.haptics.pulse([8, 12, 16]);
 		} else {
@@ -654,9 +647,6 @@ export class GameEngine {
 		this.pulseNow = 0.5 - 0.5 * Math.cos(2 * Math.PI * this.tNow);
 		if (this.running && this.alive && !this.paused && this.tNow >= 0.5 && !this.pastPeak) {
 			this.pastPeak = true;
-			this.peakBloom = this.reduceMotion
-				? 0.28 + this.feverTier * 0.04
-				: 0.55 + this.feverTier * 0.12;
 			this.adapters.audio.tick(this.sound, this.feverTier);
 			if (!this.reduceMotion && this.feverTier >= 2) {
 				this.adapters.haptics.pulse(this.feverTier >= 3 ? 12 : 5);
@@ -668,8 +658,6 @@ export class GameEngine {
 			this.cam += this.camKick;
 			this.camKick = 0;
 		}
-		this.flash *= 0.86;
-		this.peakBloom *= 0.88;
 		this.shakeX *= 0.78;
 		this.shakeY *= 0.78;
 		this.chromaX *= 0.85;
@@ -680,10 +668,7 @@ export class GameEngine {
 
 		const ctx = this.ctx;
 		ctx.clearRect(0, 0, this.W, this.H);
-		const glow =
-			0.1 +
-			this.flash * (0.35 + Math.min(this.streak, 8) * 0.02 + this.feverTier * 0.03) +
-			this.peakBloom * 0.2;
+		const glow = 0.1;
 		const g = ctx.createRadialGradient(
 			this.W / 2,
 			this.H * 0.85,
@@ -702,11 +687,10 @@ export class GameEngine {
 		ctx.fillStyle = g;
 		ctx.fillRect(0, 0, this.W, this.H);
 
-		drawLightShaft(ctx, this.W, this.H, atRisk, 0.85 + this.peakBloom * 0.4);
+		drawLightShaft(ctx, this.W, this.H, atRisk);
 
 		// Ambient motes
 		if (this.motes.length && this.W > 0) {
-			const peakBoost = 1 + this.peakBloom * 1.8;
 			for (const m of this.motes) {
 				if (!this.reduceMotion) {
 					m.x += m.vx;
@@ -715,7 +699,7 @@ export class GameEngine {
 					if (m.x < -4) m.x = this.W + 4;
 					if (m.x > this.W + 4) m.x = -4;
 				}
-				ctx.globalAlpha = Math.min(0.45, m.baseA * peakBoost);
+				ctx.globalAlpha = m.baseA;
 				ctx.fillStyle = atRisk ? 'rgba(158,208,224,1)' : 'rgba(255,210,122,1)';
 				ctx.beginPath();
 				ctx.arc(m.x, m.y, m.r, 0, 7);
@@ -827,22 +811,10 @@ export class GameEngine {
 			this.tapped || !this.alive,
 			atRisk,
 			this.blockHue(this.blocks.length),
-			this.beatIdx,
-			this.peakBloom
+			this.beatIdx
 		);
 		ctx.fillStyle = INK + '.25)';
 		ctx.fillRect(this.W / 2 - fw / 2, this.H - 6, fw, 2);
-		if (this.flash > 0.01 && !edgeOn) {
-			ctx.fillStyle = `rgba(255,210,122,${Math.min(0.32, this.flash * (0.18 + Math.min(this.streak, 8) * 0.01 + this.feverTier * 0.015))})`;
-			ctx.fillRect(0, 0, this.W, this.H);
-		}
-		if (this.peakBloom > 0.04) {
-			const pa = Math.min(0.2, this.peakBloom * (this.reduceMotion ? 0.12 : 0.22));
-			ctx.fillStyle = atRisk
-				? `rgba(111,175,198,${pa * 0.7})`
-				: `rgba(255,210,122,${pa})`;
-			ctx.fillRect(0, 0, this.W, this.H);
-		}
 		if (atRisk) {
 			ctx.fillStyle = 'rgba(111,175,198,.06)';
 			ctx.fillRect(0, 0, this.W, this.H);
@@ -924,8 +896,7 @@ export class GameEngine {
 			false,
 			false,
 			this.blockHue(3),
-			this.beatIdx,
-			this.peakBloom
+			this.beatIdx
 		);
 	}
 
@@ -971,8 +942,7 @@ export class GameEngine {
 				false,
 				false,
 				this.blockHue(3),
-				this.beatIdx,
-				this.peakBloom
+				this.beatIdx
 			);
 		}
 	}

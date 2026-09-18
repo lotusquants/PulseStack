@@ -114,8 +114,7 @@ export function drawPulse(
 	dead: boolean,
 	atRisk?: boolean,
 	hue = 30,
-	beat = 0,
-	peakBloom = 0
+	beat = 0
 ) {
 	const cx = w / 2,
 		hot = p > 0.94;
@@ -130,9 +129,6 @@ export function drawPulse(
 				? `hsl(${hue} 85% 78%)`
 				: `hsl(${hue} 72% 62%)`;
 	const bh = BH; // the pulse bar is the same height as the block it becomes
-	const bloom = Math.max(0, peakBloom);
-	const hotBoost = hot && !dead ? 1 + bloom * 0.6 : 1;
-
 	if (id === 'circle') {
 		const cy = h * 0.2,
 			rMax = w * 0.09,
@@ -142,27 +138,14 @@ export function drawPulse(
 		c.beginPath();
 		c.arc(cx, cy, rMax, 0, 7);
 		c.stroke();
-		if ((hot || bloom > 0.05) && !dead) {
-			const spread = r * (1.55 + bloom * 0.5);
-			const g = c.createRadialGradient(cx, cy, r * 0.15, cx, cy, spread);
-			const core = atRisk
-				? `rgba(158,208,224,${0.4 * hotBoost})`
-				: `rgba(255,210,122,${0.42 * hotBoost})`;
-			g.addColorStop(0, core);
+		if (hot && !dead) {
+			const g = c.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 1.55);
+			g.addColorStop(0, 'rgba(255,210,122,.35)');
 			g.addColorStop(1, 'rgba(255,210,122,0)');
 			c.fillStyle = g;
 			c.beginPath();
-			c.arc(cx, cy, spread, 0, 7);
+			c.arc(cx, cy, r * 1.55, 0, 7);
 			c.fill();
-			if (bloom > 0.08) {
-				c.strokeStyle = atRisk
-					? `rgba(158,208,224,${0.45 * bloom})`
-					: `rgba(255,210,122,${0.55 * bloom})`;
-				c.lineWidth = 1.5 + bloom;
-				c.beginPath();
-				c.arc(cx, cy, rMax * (0.95 + bloom * 0.12), 0, 7);
-				c.stroke();
-			}
 		}
 		c.fillStyle = col;
 		c.globalAlpha = dead ? 0.35 : 0.92;
@@ -171,7 +154,7 @@ export function drawPulse(
 		c.fill();
 		c.globalAlpha = 1;
 		c.strokeStyle = hot ? col : INK + '.22)';
-		c.lineWidth = hot ? 2.5 + bloom : 1.25;
+		c.lineWidth = hot ? 2.5 : 1.25;
 		c.beginPath();
 		c.arc(cx, cy, rMax * (0.12 + 0.88 * p), 0, 7);
 		c.stroke();
@@ -199,29 +182,9 @@ export function drawPulse(
 		const y = top - bh;
 		// the fill is exactly the cut you'd get: no halo, no outline
 		const gw = Math.max(2, floor * p);
-		if ((hot || bloom > 0.05) && !dead) {
-			const pad = 4 + bloom * 8;
-			c.fillStyle = atRisk
-				? `rgba(111,175,198,${0.14 * hotBoost})`
-				: `rgba(255,210,122,${0.16 * hotBoost})`;
-			c.fillRect(
-				Math.round(cx - floor / 2) - pad,
-				y - pad * 0.6,
-				Math.round(floor) + pad * 2,
-				bh + pad
-			);
-			if (bloom > 0.08) {
-				c.strokeStyle = atRisk
-					? `rgba(158,208,224,${0.4 * bloom})`
-					: `rgba(255,210,122,${0.5 * bloom})`;
-				c.lineWidth = 1.25 + bloom;
-				c.strokeRect(
-					Math.round(cx - floor / 2) - 2 + 0.5,
-					y - 2 + 0.5,
-					Math.round(floor) + 4 - 1,
-					bh + 2
-				);
-			}
+		if (hot && !dead) {
+			c.fillStyle = 'rgba(255,210,122,.12)';
+			c.fillRect(Math.round(cx - floor / 2) - 4, y - 4, Math.round(floor) + 8, bh + 6);
 		}
 		c.fillStyle = col;
 		c.globalAlpha = dead ? 0.25 : 0.45 + 0.4 * p;
@@ -229,13 +192,8 @@ export function drawPulse(
 		c.globalAlpha = 1;
 		if (p > 0.55) {
 			c.strokeStyle = col;
-			c.lineWidth = hot ? 1.75 + bloom * 0.5 : 1;
-			c.strokeRect(
-				Math.round(cx - gw / 2) + 0.5,
-				y + 0.5,
-				Math.max(1, Math.round(gw)) - 1,
-				bh - 2
-			);
+			c.lineWidth = hot ? 1.75 : 1;
+			c.strokeRect(Math.round(cx - gw / 2) + 0.5, y + 0.5, Math.max(1, Math.round(gw)) - 1, bh - 2);
 		}
 	}
 }
