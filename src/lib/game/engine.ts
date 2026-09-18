@@ -12,12 +12,13 @@ import {
 	headlineFor,
 	tierOf,
 	type PlayMode,
-	type ShapeId
+	type ShapeId,
 } from './constants';
 import { drawPulse } from './draw';
 import { haptic } from './haptics';
-import { fetchBoard, lbAddLocal, lbGet, lbRank, post, type LbEntry } from './lb';
-import { periodFor, makeCryptoRng, mulberry32, type Rng } from './rng';
+import { setKeepAwake } from './keepAwake';
+import { fetchBoard, lbAddLocal, lbGet, lbRank, postScore, postStart, type LbEntry } from './lb';
+import { periodFor, makeCryptoRng, mulberry32, type Rng } from './replay';
 import { shareCard } from './share';
 import { hideSheet, prefersReducedMotion, setCoach, showSheet } from './sheets';
 import {
@@ -28,7 +29,7 @@ import {
 	save,
 	saveUnlocks,
 	utcDay,
-	type Unlocks
+	type Unlocks,
 } from './storage';
 
 type Block = { w: number; hue: number; q: number };
@@ -188,7 +189,7 @@ export class GameEngine {
 			sound: this.sound,
 			vers: this.versionLabel(),
 			over: this.emptyOver(),
-			lb: { title: 'Leaderboard', modeLabel: 'Daily', entries: [], pidShort: this.pid.slice(0, 4) }
+			lb: { title: 'Leaderboard', modeLabel: 'Daily', entries: [], pidShort: this.pid.slice(0, 4) },
 		});
 		this.syncDayStreakHud();
 		this.raf = requestAnimationFrame((n) => this.frame(n));
@@ -199,12 +200,14 @@ export class GameEngine {
 		this.destroyed = true;
 		cancelAnimationFrame(this.raf);
 		removeEventListener('resize', this.onResize);
+		void setKeepAwake(false);
 	}
 
 	private onResize = () => this.size();
 
 	private versionLabel() {
-		if (typeof window !== 'undefined' && window.Android?.version) return 'v' + window.Android.version();
+		if (typeof window !== 'undefined' && window.Android?.version)
+			return 'v' + window.Android.version();
 		return 'web';
 	}
 
@@ -218,7 +221,7 @@ export class GameEngine {
 			feverLabel: '—',
 			unlockNote: '',
 			board: '',
-			shareOn: false
+			shareOn: false,
 		};
 	}
 
@@ -418,10 +421,10 @@ export class GameEngine {
 				this.beat0 = this.beatIdx;
 				this.tok = null;
 				this.rng = this.rnd;
-				post(this.pid, '/start', { mode: this.playMode })
+				postStart(this.pid, this.playMode)
 					.then((j) => {
 						this.tok = j.tok || null;
-						if (Number.isInteger(j.seed)) this.rng = mulberry32(j.seed);
+						if (Number.isInteger(j.seed)) this.rng = mulberry32(j.seed!);
 					})
 					.catch(() => {});
 			} else {
@@ -477,7 +480,7 @@ export class GameEngine {
 				vx: -1.4,
 				vy: -1.5,
 				a: 1,
-				hue: this.blocks[n - 1].hue
+				hue: this.blocks[n - 1].hue,
 			});
 			this.shards.push({
 				x: this.W / 2 + w / 2,
@@ -486,7 +489,7 @@ export class GameEngine {
 				vx: 1.4,
 				vy: -1.5,
 				a: 1,
-				hue: this.blocks[n - 1].hue
+				hue: this.blocks[n - 1].hue,
 			});
 		}
 		this.blocks.push({ w, hue: this.blockHue(n), q });
@@ -503,6 +506,7 @@ export class GameEngine {
 
 	private end(n: number) {
 		this.alive = false;
+		void setKeepAwake(false);
 		setCoach(this.el('coach'), false);
 		this.patchHud({ coachOn: false });
 		this.holdBeat = false;
@@ -546,8 +550,8 @@ export class GameEngine {
 				feverLabel: tierLabel,
 				unlockNote: this.lastUnlockNote,
 				board: '',
-				shareOn: n > 0
-			}
+				shareOn: n > 0,
+			},
 		});
 		if (n > 0) this.lbAdd(this.who(), n);
 		this.syncShapeUI();
@@ -567,13 +571,15 @@ export class GameEngine {
 			return;
 		}
 		this.patchBoard('Submitting…');
-		post(this.pid, '/score', { tok: t, name, n, taps: this.taps })
-			.then((list) => {
-				if (!Array.isArray(list)) {
+		postScore({ pid: this.pid, tok: t, name, n, taps: this.taps })
+			.then((res) => {
+				if (res.error || !Array.isArray(res.lifetime) || !Array.isArray(res.daily)) {
 					this.patchBoard("Couldn't reach the board");
 					return;
 				}
-				save(mode === 'daily' ? 'lbDaily' : 'lb', JSON.stringify(list));
+				save('lb', JSON.stringify(res.lifetime));
+				save('lbDaily', JSON.stringify(res.daily));
+				const list = mode === 'daily' ? res.daily : res.lifetime;
 				const r = lbRank(list, this.pid, n);
 				const tag = mode === 'daily' ? 'daily' : 'worldwide';
 				this.patchBoard(r ? `Submitted · #${r} ${tag}` : 'Submitted · outside top 10');
@@ -592,8 +598,8 @@ export class GameEngine {
 				feverLabel: this.lastTier ? TIER_NAME[this.lastTier] : '—',
 				unlockNote: this.lastUnlockNote,
 				board,
-				shareOn: this.lastScore > 0
-			}
+				shareOn: this.lastScore > 0,
+			},
 		});
 	}
 
@@ -603,7 +609,8 @@ export class GameEngine {
 		this.lastNow = now;
 		if (this.alive)
 			while (now - this.beatStart >= this.beatLen) {
-				if (this.running && this.holdBeat && !this.tapped && !this.teaching) this.resolveHoldSuccess();
+				if (this.running && this.holdBeat && !this.tapped && !this.teaching)
+					this.resolveHoldSuccess();
 				this.beatStart += this.beatLen;
 				this.beatIdx++;
 				this.beatLen = periodFor(this.running ? this.blocks.length : 1, this.rng, MIN_PERIOD, REST);
@@ -638,8 +645,16 @@ export class GameEngine {
 
 		const ctx = this.ctx;
 		ctx.clearRect(0, 0, this.W, this.H);
-		const glow = 0.1 + this.flash * (0.35 + Math.min(this.streak, 8) * 0.02 + this.feverTier * 0.03);
-		const g = ctx.createRadialGradient(this.W / 2, this.H * 0.85, 10, this.W / 2, this.H * 0.85, this.H * 0.7);
+		const glow =
+			0.1 + this.flash * (0.35 + Math.min(this.streak, 8) * 0.02 + this.feverTier * 0.03);
+		const g = ctx.createRadialGradient(
+			this.W / 2,
+			this.H * 0.85,
+			10,
+			this.W / 2,
+			this.H * 0.85,
+			this.H * 0.7
+		);
 		if (atRisk) {
 			g.addColorStop(0, `rgba(111,175,198,${0.08 + glow * 0.35})`);
 			g.addColorStop(1, 'rgba(111,175,198,0)');
@@ -887,7 +902,7 @@ export class GameEngine {
 		await Promise.all([
 			hideSheet(this.el('start')),
 			hideSheet(this.el('over')),
-			hideSheet(this.el('menu'))
+			hideSheet(this.el('menu')),
 		]);
 		showSheet(this.el('lb'));
 		const entries = lbGet(this.lbView);
@@ -897,8 +912,8 @@ export class GameEngine {
 				title: this.lbView === 'daily' ? 'Daily board' : 'Leaderboard',
 				modeLabel: this.lbView === 'daily' ? 'Endless' : 'Daily',
 				entries,
-				pidShort: this.pid.slice(0, 4)
-			}
+				pidShort: this.pid.slice(0, 4),
+			},
 		});
 		const remote = await fetchBoard(this.lbView);
 		if (remote) {
@@ -907,8 +922,8 @@ export class GameEngine {
 					title: this.lbView === 'daily' ? 'Daily board' : 'Leaderboard',
 					modeLabel: this.lbView === 'daily' ? 'Endless' : 'Daily',
 					entries: remote,
-					pidShort: this.pid.slice(0, 4)
-				}
+					pidShort: this.pid.slice(0, 4),
+				},
 			});
 		}
 	}
@@ -947,6 +962,7 @@ export class GameEngine {
 		this.running = false;
 		this.alive = false;
 		this.teaching = false;
+		void setKeepAwake(false);
 		setCoach(this.el('coach'), false);
 		this.patchHud({ coachOn: false });
 		this.reset();
@@ -957,6 +973,7 @@ export class GameEngine {
 
 	begin(mode: PlayMode = 'endless') {
 		if (this.sound) audio();
+		void setKeepAwake(true);
 		hideSheet(this.el('start'));
 		hideSheet(this.el('over'));
 		hideSheet(this.el('options'));
@@ -973,10 +990,10 @@ export class GameEngine {
 		setCoach(this.el('coach'), this.teaching);
 		this.patchHud({ sheet: null, coachOn: this.teaching });
 		if (!this.teaching) {
-			post(this.pid, '/start', { mode: this.playMode })
+			postStart(this.pid, this.playMode)
 				.then((j) => {
 					this.tok = j.tok || null;
-					if (Number.isInteger(j.seed)) this.rng = mulberry32(j.seed);
+					if (Number.isInteger(j.seed)) this.rng = mulberry32(j.seed!);
 				})
 				.catch(() => {});
 		}
@@ -992,7 +1009,7 @@ export class GameEngine {
 			lastPerfectPct: this.lastPerfectPct,
 			playMode: this.playMode,
 			shape: this.shape,
-			who: this.who()
+			who: this.who(),
 		});
 	}
 

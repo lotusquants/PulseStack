@@ -33,8 +33,7 @@ body {
 	inset: 0;
 	background:
 		radial-gradient(120% 80% at 50% 110%, rgba(242, 166, 90, 0.14), transparent 55%),
-		radial-gradient(80% 50% at 50% -10%, rgba(111, 175, 198, 0.06), transparent 45%),
-		var(--ground);
+		radial-gradient(80% 50% at 50% -10%, rgba(111, 175, 198, 0.06), transparent 45%), var(--ground);
 }
 #c {
 	display: block;

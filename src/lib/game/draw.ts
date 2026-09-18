@@ -52,7 +52,12 @@ export function drawPulse(
 		c.strokeStyle = INK + (hot ? '.28)' : '.16)');
 		c.lineWidth = 1.25;
 		c.setLineDash(hot ? [] : [5, 4]);
-		c.strokeRect(Math.round(cx - floor / 2) + 0.5, y + 0.5, Math.max(1, Math.round(floor)) - 1, bh - 2);
+		c.strokeRect(
+			Math.round(cx - floor / 2) + 0.5,
+			y + 0.5,
+			Math.max(1, Math.round(floor)) - 1,
+			bh - 2
+		);
 		c.setLineDash([]);
 		if (hot && !dead) {
 			c.fillStyle = 'rgba(255,210,122,.12)';

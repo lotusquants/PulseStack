@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/public';
 export const Cap = {
 	get isNative() {
 		return Capacitor.isNativePlatform();
-	}
+	},
 };
 
 export const LB_URL =

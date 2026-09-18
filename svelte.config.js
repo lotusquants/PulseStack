@@ -10,13 +10,13 @@ const config = {
 			assets: 'build',
 			fallback: '404.html',
 			precompress: false,
-			strict: true
+			strict: true,
 		}),
 		paths: {
 			relative: true,
-			base: process.env.BASE_PATH ?? ''
-		}
-	}
+			base: process.env.BASE_PATH ?? '',
+		},
+	},
 };
 
 export default config;

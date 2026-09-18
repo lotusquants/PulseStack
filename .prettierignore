@@ -1,0 +1,9 @@
+build/
+.svelte-kit/
+node_modules/
+android/
+dist/
+package-lock.json
+.env
+.env.*
+worker/.wrangler/

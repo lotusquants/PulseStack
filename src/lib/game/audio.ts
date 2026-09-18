@@ -1,7 +1,11 @@
 let ac: AudioContext | null = null;
 
 export function audio(): AudioContext {
-	if (!ac) ac = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+	if (!ac)
+		ac = new (
+			window.AudioContext ||
+			(window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+		)();
 	if (ac.state === 'suspended') ac.resume();
 	return ac;
 }

@@ -34,9 +34,9 @@ Every push to `main` / `master` runs [`.github/workflows/deploy.yml`](.github/wo
 
 Quick version:
 
-1. Create Cloudflare API token (Workers edit + Pages edit) → secret `CLOUDFLARE_API_TOKEN`
+1. Create Cloudflare API token (Workers edit) → secret `CLOUDFLARE_API_TOKEN`
 2. Secret `CLOUDFLARE_ACCOUNT_ID`
-3. Variable `PUBLIC_LB_URL` = your Worker URL (set after first Worker deploy if needed)
+3. Variable `PUBLIC_LB_URL` = your leaderboard Worker URL (set after first Worker deploy if needed)
 4. Push to `master` (or Actions → **deploy** → Run workflow)
 
 Local one-off (optional, uses your own Wrangler login):
@@ -46,7 +46,6 @@ npm run deploy:cf          # game
 npm run deploy:worker      # Worker
 ```
 
-
 ## Android (Capacitor)
 
 ```bash
@@ -54,19 +53,19 @@ npm run cap:sync   # build + copy into android/
 npm run cap:open   # Android Studio
 ```
 
-App id: `app.pulsestack`. Plugins: App (back button), Haptics, Share, Splash Screen, Status Bar.
+App id: `app.pulsestack`. Plugins: App (back button), Haptics, Keep Awake, Share, Splash Screen, Status Bar.
 
 ## Layout
 
-| Path | Role |
-|------|------|
-| `src/` | SvelteKit UI + `src/lib/game/` engine |
-| `static/` | PWA manifest, icon, service worker |
-| `android/` | Capacitor Android project |
-| `worker/` | Leaderboard API (Worker + D1) |
-| `.github/` | Auto-deploy workflows + deploy guide |
+| Path       | Role                                         |
+| ---------- | -------------------------------------------- |
+| `src/`     | SvelteKit UI + `src/lib/game/` engine        |
+| `static/`  | PWA manifest, icon, service worker           |
+| `android/` | Capacitor Android project                    |
+| `worker/`  | Leaderboard API (`worker/src/index.ts` + D1) |
+| `.github/` | Auto-deploy workflows + deploy guide         |
 
-Beat RNG (`mulberry32` / `periodFor`) in `src/lib/game/rng.ts` must stay in sync with `worker/worker.js`.
+Beat RNG / replay (`mulberry32`, `periodFor`, `replay`) live in `src/lib/game/replay.ts` and are shared with the Worker — do not fork.
 
 ## Cloudflare leaderboard (manual / first-time)
 

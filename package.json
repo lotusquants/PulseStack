@@ -1,40 +1,51 @@
 {
-  "name": "pulsestack",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "npm run build && wrangler deploy",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "cap:sync": "npm run build && npx cap sync android",
-    "cap:open": "npx cap open android",
-    "deploy:cf": "npm run deploy",
-    "deploy:worker": "npx wrangler deploy --config worker/wrangler.toml"
-  },
-  "devDependencies": {
-    "@sveltejs/adapter-static": "^3.0.8",
-    "@sveltejs/kit": "^2.20.2",
-    "@sveltejs/vite-plugin-svelte": "^5.0.3",
-    "svelte": "^5.23.2",
-    "svelte-check": "^4.1.5",
-    "typescript": "^5.8.2",
-    "vite": "^6.2.2",
-    "wrangler": "^4.134.0"
-  },
-  "dependencies": {
-    "@capacitor/android": "^7.2.0",
-    "@capacitor/app": "^7.0.1",
-    "@capacitor/cli": "^7.2.0",
-    "@capacitor/core": "^7.2.0",
-    "@capacitor/haptics": "^7.0.1",
-    "@capacitor/share": "^7.0.1",
-    "@capacitor/splash-screen": "^7.0.1",
-    "@capacitor/status-bar": "^7.0.1"
-  },
-  "allowScripts": {
-    "esbuild@0.25.12": true
-  }
+	"name": "pulsestack",
+	"private": true,
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"deploy": "npm run build && wrangler deploy",
+		"cap:sync": "npm run build && npx cap sync android",
+		"cap:open": "npx cap open android",
+		"deploy:cf": "npm run deploy",
+		"deploy:worker": "npx wrangler deploy --config worker/wrangler.toml"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260917.1",
+		"@sveltejs/adapter-static": "^3.0.8",
+		"@sveltejs/kit": "^2.20.2",
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"prettier": "^3.6.2",
+		"prettier-plugin-svelte": "^3.4.0",
+		"svelte": "^5.23.2",
+		"svelte-check": "^4.1.5",
+		"typescript": "^5.8.2",
+		"vite": "^6.2.2",
+		"vitest": "^3.2.4",
+		"wrangler": "^4.134.0"
+	},
+	"dependencies": {
+		"@capacitor-community/keep-awake": "^7.1.0",
+		"@capacitor/android": "^7.2.0",
+		"@capacitor/app": "^7.0.1",
+		"@capacitor/cli": "^7.2.0",
+		"@capacitor/core": "^7.2.0",
+		"@capacitor/haptics": "^7.0.1",
+		"@capacitor/share": "^7.0.1",
+		"@capacitor/splash-screen": "^7.0.1",
+		"@capacitor/status-bar": "^7.0.1"
+	},
+	"allowScripts": {
+		"esbuild@0.25.12": true,
+		"esbuild@0.28.1": true,
+		"workerd@1.20260917.1": true
+	}
 }

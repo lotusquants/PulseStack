@@ -30,9 +30,9 @@
 			feverLabel: '—',
 			unlockNote: '',
 			board: '',
-			shareOn: false
+			shareOn: false,
 		},
-		lb: { title: 'Leaderboard', modeLabel: 'Daily', entries: [], pidShort: '' }
+		lb: { title: 'Leaderboard', modeLabel: 'Daily', entries: [], pidShort: '' },
 	};
 
 	function mergeHud(patch: Partial<HudState>) {
@@ -40,7 +40,7 @@
 			...hud,
 			...patch,
 			over: patch.over ? { ...hud.over, ...patch.over } : hud.over,
-			lb: patch.lb ? { ...hud.lb, ...patch.lb } : hud.lb
+			lb: patch.lb ? { ...hud.lb, ...patch.lb } : hud.lb,
 		};
 		if (patch.name !== undefined) nameInput = patch.name;
 	}
@@ -51,11 +51,11 @@
 			getStage: () => stageEl,
 			getEl: (id) => document.getElementById(id),
 			onHud: mergeHud,
-			getName: () => nameInput
+			getName: () => nameInput,
 		});
 		engine.init();
 		mergeHud({
-			vers: Cap.isNative ? 'v' + (env.PUBLIC_APP_VERSION || '1.0.0') : appVersionLabel()
+			vers: Cap.isNative ? 'v' + (env.PUBLIC_APP_VERSION || '1.0.0') : appVersionLabel(),
 		});
 
 		const onKey = (e: KeyboardEvent) => {
@@ -156,7 +156,9 @@
 				oninput={() => engine?.setName(nameInput)}
 			/>
 			<button type="button" id="go" onclick={() => engine?.begin('endless')}>Start</button>
-			<button type="button" class="ghost" id="daily" onclick={() => engine?.begin('daily')}>Daily</button>
+			<button type="button" class="ghost" id="daily" onclick={() => engine?.begin('daily')}
+				>Daily</button
+			>
 		</div>
 		<div class="homeBar">
 			<button type="button" id="lbBtn" onclick={() => engine?.showLb('start')}>Board</button>
@@ -210,9 +212,7 @@
 			{:else}
 				{#each hud.lb.entries as e, i}
 					<li class:me={e.id === hud.lb.pidShort}>
-						<span
-							>{i + 1}. {e.name.replace(/[<>&]/g, '')} <small>#{e.id}</small></span
-						>
+						<span>{i + 1}. {e.name.replace(/[<>&]/g, '')} <small>#{e.id}</small></span>
 						<b>{e.n}</b>
 					</li>
 				{/each}
@@ -230,7 +230,9 @@
 		<h2>Paused</h2>
 		<button type="button" id="resume" onclick={() => engine?.resume()}>Resume</button>
 		<div class="row">
-			<button type="button" class="ghost" id="restart" onclick={() => engine?.restart()}>Restart</button>
+			<button type="button" class="ghost" id="restart" onclick={() => engine?.restart()}
+				>Restart</button
+			>
 			<button type="button" class="ghost" id="optBtn3" onclick={() => engine?.showOptions()}
 				>Pulse</button
 			>

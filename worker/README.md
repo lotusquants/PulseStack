@@ -64,14 +64,14 @@ npm run cap:sync   # if shipping Capacitor
 
 ## API
 
-| Method | Path | Body | Result |
-|--------|------|------|--------|
-| `GET` | `/` | — | Top 10 endless |
-| `GET` | `/daily` | — | Top 10 for today's UTC day |
-| `POST` | `/start` | `{ pid, mode? }` | `{ tok, seed, mode, day? }` |
-| `POST` | `/score` | `{ tok, pid, name, n, taps }` | Updated top 10 |
+| Method | Path     | Body                          | Result                     |
+| ------ | -------- | ----------------------------- | -------------------------- |
+| `GET`  | `/`      | —                             | Top 10 endless             |
+| `GET`  | `/daily` | —                             | Top 10 for today's UTC day |
+| `POST` | `/start` | `{ pid, mode? }`              | `{ tok, seed }`            |
+| `POST` | `/score` | `{ tok, pid, name, n, taps }` | `{ lifetime, daily }`      |
 
-`taps` is replayed against `seed` (anti-cheat). Client RNG in `src/lib/game/rng.ts` must match `worker.js`.
+`taps` is replayed against `seed` (anti-cheat). Shared logic lives in `src/lib/game/replay.ts` (imported by both the app and `worker/src/index.ts`).
 
 ## Local Worker
 
@@ -87,5 +87,5 @@ Point `.env` `PUBLIC_LB_URL` at the local URL Wrangler shows (usually `http://12
 ```bash
 wrangler d1 execute pulsestack --remote --command="SELECT COUNT(*) FROM scores"
 wrangler tail          # live logs
-wrangler deploy        # ship worker.js changes
+wrangler deploy        # ship worker/src/index.ts
 ```
