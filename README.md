@@ -1,6 +1,6 @@
 # PulseStack
 
-Tap-at-the-peak stacking game. **Web** is SvelteKit on **Cloudflare Pages**; **Android** is the same build via Capacitor. Leaderboard is a **Cloudflare Worker** + D1 in `worker/`.
+Tap-at-the-peak stacking game. **Web** is SvelteKit on **Cloudflare Workers** (static assets); **Android** is the same build via Capacitor. Leaderboard is a **Cloudflare Worker** + D1 in `worker/`.
 
 ## Develop (web)
 
@@ -25,7 +25,7 @@ npm run preview
 
 Every push to `main` / `master` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
 
-1. **Pages** — game UI → Cloudflare Pages project `pulsestack`
+1. **Game** — static build → Worker `pulsestack` (root `wrangler.jsonc`), https://pulsestack.lotusquants.workers.dev
 2. **Worker** — leaderboard API → Worker `pulsestack-lb`
 
 **You never commit Cloudflare credentials.** Add secrets/vars in GitHub once:
@@ -42,7 +42,7 @@ Quick version:
 Local one-off (optional, uses your own Wrangler login):
 
 ```bash
-npm run deploy:cf          # Pages
+npm run deploy:cf          # game
 npm run deploy:worker      # Worker
 ```
 

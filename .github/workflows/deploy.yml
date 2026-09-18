@@ -1,4 +1,4 @@
-# Auto-deploy Cloudflare Pages (game) + Worker (leaderboard) on push to main/master.
+# Auto-deploy Cloudflare Workers static assets (game) + Worker (leaderboard) on push to main/master.
 # Requires repo secrets — see README "Deploy (Cloudflare)".
 name: deploy
 
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   pages:
-    name: Cloudflare Pages
+    name: Cloudflare Workers (game)
     if: github.event_name == 'push' || inputs.pages
     runs-on: ubuntu-latest
     permissions:
@@ -49,15 +49,15 @@ jobs:
         run: npm run build
         env:
           # Set repo variable PUBLIC_LB_URL to your Worker URL (e.g. https://pulsestack-lb.<account>.workers.dev)
-          PUBLIC_LB_URL: ${{ vars.PUBLIC_LB_URL }}
+          PUBLIC_LB_URL: ${{ vars.PUBLIC_LB_URL || 'https://pulsestack-lb.lotusquants.workers.dev' }}
           PUBLIC_APP_VERSION: ${{ github.sha }}
 
-      - name: Deploy Pages
+      - name: Deploy game
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build --project-name=${{ vars.CF_PAGES_PROJECT || 'pulsestack' }} --commit-dirty=true
+          command: deploy
 
   worker:
     name: Cloudflare Worker
