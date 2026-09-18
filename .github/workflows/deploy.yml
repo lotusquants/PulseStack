@@ -36,12 +36,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check Cloudflare secrets
-        run: |
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID under Settings → Secrets and variables → Actions"
-            exit 1
-          fi
 
       - run: npm ci
 
@@ -72,13 +66,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Cloudflare secrets
-        working-directory: .
-        run: |
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID under Settings → Secrets and variables → Actions"
-            exit 1
-          fi
 
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
