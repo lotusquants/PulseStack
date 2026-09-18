@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
-	import { GameEngine, type HudState } from '$lib/game/engine';
-	import { appVersionLabel, Cap } from '$lib/game/platform';
+	import { createGame, type HudState } from '$lib/game';
+	import { appVersionLabel, Cap } from '$lib/adapters';
 	import { env } from '$env/dynamic/public';
 
 	let stageEl: HTMLElement;
 	let canvasEl: HTMLCanvasElement;
 	let nameInput = '';
-	let engine: GameEngine | null = null;
+	let engine: ReturnType<typeof createGame> | null = null;
 
 	let hud: HudState = {
 		score: 0,
@@ -46,12 +46,14 @@
 	}
 
 	onMount(() => {
-		engine = new GameEngine({
-			getCanvas: () => canvasEl,
-			getStage: () => stageEl,
-			getEl: (id) => document.getElementById(id),
-			onHud: mergeHud,
-			getName: () => nameInput,
+		engine = createGame({
+			hooks: {
+				getCanvas: () => canvasEl,
+				getStage: () => stageEl,
+				getEl: (id) => document.getElementById(id),
+				onHud: mergeHud,
+				getName: () => nameInput,
+			},
 		});
 		engine.init();
 		mergeHud({

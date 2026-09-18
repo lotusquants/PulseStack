@@ -1,4 +1,3 @@
-import { audio, chordStab, coolCue, tick, tone } from './audio';
 import {
 	BH,
 	COOL,
@@ -9,28 +8,18 @@ import {
 	REST,
 	SHAPES,
 	TIER_NAME,
+	drawPulse,
 	headlineFor,
+	makeCryptoRng,
+	mulberry32,
+	periodFor,
 	tierOf,
+	type LbEntry,
 	type PlayMode,
+	type Rng,
 	type ShapeId,
-} from './constants';
-import { drawPulse } from './draw';
-import { haptic } from './haptics';
-import { setKeepAwake } from './keepAwake';
-import { fetchBoard, lbAddLocal, lbGet, lbRank, postScore, postStart, type LbEntry } from './lb';
-import { periodFor, makeCryptoRng, mulberry32, type Rng } from './replay';
-import { shareCard } from './share';
-import { hideSheet, prefersReducedMotion, setCoach, showSheet } from './sheets';
-import {
-	ensurePid,
-	loadBestTower,
-	loadUnlocks,
-	pref,
-	save,
-	saveUnlocks,
-	utcDay,
-	type Unlocks,
-} from './storage';
+} from '../core';
+import type { GameAdapters, Unlocks } from '../adapters';
 
 type Block = { w: number; hue: number; q: number };
 type Shard = { x: number; y: number; w: number; vx: number; vy: number; a: number; hue: number };
@@ -76,6 +65,7 @@ export type EngineHooks = {
 
 export class GameEngine {
 	private hooks: EngineHooks;
+	private adapters: GameAdapters;
 	private ctx!: CanvasRenderingContext2D;
 	private W = 0;
 	private H = 0;
@@ -144,23 +134,24 @@ export class GameEngine {
 	private prevH = 0;
 	private destroyed = false;
 
-	constructor(hooks: EngineHooks) {
+	constructor(hooks: EngineHooks, adapters: GameAdapters) {
 		this.hooks = hooks;
+		this.adapters = adapters;
 	}
 
 	init() {
-		this.pid = ensurePid();
-		this.unlocks = loadUnlocks();
-		let shape = pref('shape', 'ghost') as ShapeId;
+		this.pid = this.adapters.storage.ensurePid();
+		this.unlocks = this.adapters.storage.loadUnlocks();
+		let shape = this.adapters.storage.pref('shape', 'ghost') as ShapeId;
 		if (shape !== 'ghost' && shape !== 'circle') {
 			shape = 'ghost';
-			save('shape', shape);
+			this.adapters.storage.save('shape', shape);
 		}
 		this.shape = shape;
-		this.sound = pref('sound', '1') === '1';
-		this.best = +pref('best', '0');
-		this.taught = pref('taught', '') === '1';
-		this.bestTower = loadBestTower();
+		this.sound = this.adapters.storage.pref('sound', '1') === '1';
+		this.best = +this.adapters.storage.pref('best', '0');
+		this.taught = this.adapters.storage.pref('taught', '') === '1';
+		this.bestTower = this.adapters.storage.loadBestTower();
 
 		const motionMq = matchMedia('(prefers-reduced-motion: reduce)');
 		this.reduceMotion = motionMq.matches;
@@ -184,7 +175,7 @@ export class GameEngine {
 			dayStreak: this.dayStreakText(),
 			coachOn: false,
 			sheet: 'start',
-			name: pref('name', ''),
+			name: this.adapters.storage.pref('name', ''),
 			shape: this.shape,
 			sound: this.sound,
 			vers: this.versionLabel(),
@@ -200,7 +191,7 @@ export class GameEngine {
 		this.destroyed = true;
 		cancelAnimationFrame(this.raf);
 		removeEventListener('resize', this.onResize);
-		void setKeepAwake(false);
+		void this.adapters.keepAwake.set(false);
 	}
 
 	private onResize = () => this.size();
@@ -234,7 +225,7 @@ export class GameEngine {
 	}
 
 	private dayStreakText() {
-		const s = +pref('dayStreak', '0');
+		const s = +this.adapters.storage.pref('dayStreak', '0');
 		return s > 1 ? s + ' day streak' : s === 1 ? '1 day streak' : '';
 	}
 
@@ -243,9 +234,9 @@ export class GameEngine {
 	}
 
 	private bumpDayStreak() {
-		const today = utcDay(),
-			last = pref('lastDay', '');
-		let s = +pref('dayStreak', '0');
+		const today = this.adapters.storage.utcDay(),
+			last = this.adapters.storage.pref('lastDay', '');
+		let s = +this.adapters.storage.pref('dayStreak', '0');
 		if (last === today) {
 			/* already counted */
 		} else if (last) {
@@ -254,8 +245,8 @@ export class GameEngine {
 			const gap = Math.round((+cur - +prev) / 864e5);
 			s = gap === 1 ? s + 1 : 1;
 		} else s = 1;
-		save('lastDay', today);
-		save('dayStreak', String(s));
+		this.adapters.storage.save('lastDay', today);
+		this.adapters.storage.save('dayStreak', String(s));
 		this.syncDayStreakHud();
 	}
 
@@ -264,21 +255,21 @@ export class GameEngine {
 	}
 
 	setName(v: string) {
-		save('name', v.trim());
+		this.adapters.storage.save('name', v.trim());
 		this.patchHud({ name: v });
 	}
 
 	setSound(on: boolean) {
 		this.sound = on;
-		save('sound', on ? '1' : '0');
+		this.adapters.storage.save('sound', on ? '1' : '0');
 		this.patchHud({ sound: on });
-		if (on) audio();
+		if (on) this.adapters.audio.unlock();
 	}
 
 	setShape(id: ShapeId) {
 		if (id !== 'ghost' && id !== 'circle') return;
 		this.shape = id;
-		save('shape', id);
+		this.adapters.storage.save('shape', id);
 		this.patchHud({ shape: id });
 		this.syncShapeUI();
 	}
@@ -286,7 +277,7 @@ export class GameEngine {
 	private unlockPalette() {
 		if (this.unlocks.palette) return null;
 		this.unlocks.palette = true;
-		saveUnlocks(this.unlocks);
+		this.adapters.storage.saveUnlocks(this.unlocks);
 		return 'Aurora palette';
 	}
 
@@ -372,12 +363,12 @@ export class GameEngine {
 		if (tier >= 2) this.edgeGlow = 1;
 		if (tier >= 3) this.impulseChroma();
 		this.pushFloat(TIER_NAME[tier], y - 20, tier >= 4 ? '#FFE8A8' : HOT);
-		chordStab(tier, this.sound);
+		this.adapters.audio.chordStab(tier, this.sound);
 	}
 
 	private onStreakBreak(y: number) {
 		if (this.feverTier > 0) {
-			coolCue(this.sound);
+			this.adapters.audio.coolCue(this.sound);
 			this.pushFloat('cooled', y, COOL);
 		}
 		this.feverTier = 0;
@@ -405,14 +396,14 @@ export class GameEngine {
 			kind = q === 1 ? 'perfect' : q > 0.7 ? 'ok' : 'bad';
 
 		if (this.teaching) {
-			tone(kind, n, this.sound, this.feverTier);
+			this.adapters.audio.tone(kind, n, this.sound, this.feverTier);
 			if (kind === 'perfect') {
 				this.taught = true;
-				save('taught', '1');
+				this.adapters.storage.save('taught', '1');
 				this.teaching = false;
-				setCoach(this.el('coach'), false);
+				this.adapters.sheets.setCoach(this.el('coach'), false);
 				this.patchHud({ coachOn: false });
-				haptic(12);
+				this.adapters.haptics.pulse(12);
 				this.reset();
 				this.flash = 1;
 				this.impulseKick(14);
@@ -421,7 +412,7 @@ export class GameEngine {
 				this.beat0 = this.beatIdx;
 				this.tok = null;
 				this.rng = this.rnd;
-				postStart(this.pid, this.playMode)
+				this.adapters.leaderboard.postStart(this.pid, this.playMode)
 					.then((j) => {
 						this.tok = j.tok || null;
 						if (Number.isInteger(j.seed)) this.rng = mulberry32(j.seed!);
@@ -437,7 +428,7 @@ export class GameEngine {
 						this.towerTopY(n),
 						phase < 0.5 ? COOL : 'rgba(242,166,90,.85)'
 					);
-				haptic(kind === 'bad' ? [30, 20, 30] : 6);
+				this.adapters.haptics.pulse(kind === 'bad' ? [30, 20, 30] : 6);
 			}
 			return;
 		}
@@ -449,7 +440,7 @@ export class GameEngine {
 		}
 
 		this.taps.push([this.beatIdx - this.beat0, phase]);
-		tone(kind, n, this.sound, this.feverTier);
+		this.adapters.audio.tone(kind, n, this.sound, this.feverTier);
 		if (kind === 'perfect') {
 			this.streak++;
 			this.perfects++;
@@ -469,7 +460,7 @@ export class GameEngine {
 				);
 		}
 		this.syncStreakHud();
-		haptic(kind === 'perfect' ? 12 : kind === 'bad' ? [30, 20, 30] : 6);
+		this.adapters.haptics.pulse(kind === 'perfect' ? 12 : kind === 'bad' ? [30, 20, 30] : 6);
 		if (w < floor - 1) {
 			const side = (floor - w) / 2,
 				y = this.towerTopY(n);
@@ -506,8 +497,8 @@ export class GameEngine {
 
 	private end(n: number) {
 		this.alive = false;
-		void setKeepAwake(false);
-		setCoach(this.el('coach'), false);
+		void this.adapters.keepAwake.set(false);
+		this.adapters.sheets.setCoach(this.el('coach'), false);
 		this.patchHud({ coachOn: false });
 		this.holdBeat = false;
 		this.holdArmed = false;
@@ -518,9 +509,9 @@ export class GameEngine {
 		this.lastTier = this.feverTier || tierOf(this.maxStreak);
 		if (n > this.best) {
 			this.best = n;
-			save('best', this.best);
+			this.adapters.storage.save('best', this.best);
 			this.bestTower = this.blocks.map((b) => +(b.w / this.W).toFixed(5));
-			save('bestTower', JSON.stringify(this.bestTower));
+			this.adapters.storage.save('bestTower', JSON.stringify(this.bestTower));
 		}
 		this.bumpDayStreak();
 		const unlocked: string[] = [];
@@ -556,14 +547,14 @@ export class GameEngine {
 		if (n > 0) this.lbAdd(this.who(), n);
 		this.syncShapeUI();
 		setTimeout(() => {
-			showSheet(this.el('over'));
+			this.adapters.sheets.show(this.el('over'));
 			this.patchHud({ sheet: 'over' });
 		}, 700);
 	}
 
 	private lbAdd(name: string, n: number) {
 		const mode = this.playMode;
-		lbAddLocal(this.pid, mode, name, n);
+		this.adapters.leaderboard.addLocal(this.pid, mode, name, n);
 		const t = this.tok;
 		this.tok = null;
 		if (!t) {
@@ -571,16 +562,15 @@ export class GameEngine {
 			return;
 		}
 		this.patchBoard('Submitting…');
-		postScore({ pid: this.pid, tok: t, name, n, taps: this.taps })
+		this.adapters.leaderboard.postScore({ pid: this.pid, tok: t, name, n, taps: this.taps })
 			.then((res) => {
 				if (res.error || !Array.isArray(res.lifetime) || !Array.isArray(res.daily)) {
 					this.patchBoard("Couldn't reach the board");
 					return;
 				}
-				save('lb', JSON.stringify(res.lifetime));
-				save('lbDaily', JSON.stringify(res.daily));
+				this.adapters.leaderboard.saveBoards(res.lifetime, res.daily);
 				const list = mode === 'daily' ? res.daily : res.lifetime;
-				const r = lbRank(list, this.pid, n);
+				const r = this.adapters.leaderboard.rank(list, this.pid, n);
 				const tag = mode === 'daily' ? 'daily' : 'worldwide';
 				this.patchBoard(r ? `Submitted · #${r} ${tag}` : 'Submitted · outside top 10');
 			})
@@ -625,7 +615,7 @@ export class GameEngine {
 		this.pulseNow = 0.5 - 0.5 * Math.cos(2 * Math.PI * this.tNow);
 		if (this.running && this.alive && !this.paused && this.tNow >= 0.5 && !this.pastPeak) {
 			this.pastPeak = true;
-			tick(this.sound, this.feverTier, this.holdBeat);
+			this.adapters.audio.tick(this.sound, this.feverTier, this.holdBeat);
 		}
 		this.camTarget = Math.max(0, this.H * 0.45 - this.towerTopY(this.blocks.length));
 		this.cam += (this.camTarget - this.cam) * 0.12;
@@ -872,24 +862,24 @@ export class GameEngine {
 	}
 
 	async showOptions() {
-		await Promise.all([hideSheet(this.el('start')), hideSheet(this.el('over'))]);
-		showSheet(this.el('options'));
+		await Promise.all([this.adapters.sheets.hide(this.el('start')), this.adapters.sheets.hide(this.el('over'))]);
+		this.adapters.sheets.show(this.el('options'));
 		this.patchHud({ sheet: 'options', sound: this.sound, shape: this.shape });
 		this.syncShapeUI();
 		requestAnimationFrame(() => this.sizeOpts());
 	}
 
 	async hideOptions() {
-		await hideSheet(this.el('options'));
+		await this.adapters.sheets.hide(this.el('options'));
 		if (this.paused) {
-			showSheet(this.el('menu'));
+			this.adapters.sheets.show(this.el('menu'));
 			this.patchHud({ sheet: 'menu' });
 		} else if (!this.running) {
-			showSheet(this.el('start'));
+			this.adapters.sheets.show(this.el('start'));
 			this.patchHud({ sheet: 'start' });
 			requestAnimationFrame(() => this.sizePulsePrev());
 		} else if (!this.alive) {
-			showSheet(this.el('over'));
+			this.adapters.sheets.show(this.el('over'));
 			this.patchHud({ sheet: 'over' });
 		} else {
 			this.patchHud({ sheet: null });
@@ -900,12 +890,12 @@ export class GameEngine {
 		this.lbView = mode === 'daily' ? 'daily' : 'endless';
 		this.lbBack = back;
 		await Promise.all([
-			hideSheet(this.el('start')),
-			hideSheet(this.el('over')),
-			hideSheet(this.el('menu')),
+			this.adapters.sheets.hide(this.el('start')),
+			this.adapters.sheets.hide(this.el('over')),
+			this.adapters.sheets.hide(this.el('menu')),
 		]);
-		showSheet(this.el('lb'));
-		const entries = lbGet(this.lbView);
+		this.adapters.sheets.show(this.el('lb'));
+		const entries = this.adapters.leaderboard.getLocal(this.lbView);
 		this.patchHud({
 			sheet: 'lb',
 			lb: {
@@ -915,7 +905,7 @@ export class GameEngine {
 				pidShort: this.pid.slice(0, 4),
 			},
 		});
-		const remote = await fetchBoard(this.lbView);
+		const remote = await this.adapters.leaderboard.fetchBoard(this.lbView);
 		if (remote) {
 			this.patchHud({
 				lb: {
@@ -929,8 +919,8 @@ export class GameEngine {
 	}
 
 	async hideLb() {
-		await hideSheet(this.el('lb'));
-		showSheet(this.el(this.lbBack));
+		await this.adapters.sheets.hide(this.el('lb'));
+		this.adapters.sheets.show(this.el(this.lbBack));
 		this.patchHud({ sheet: this.lbBack });
 	}
 
@@ -941,19 +931,19 @@ export class GameEngine {
 	pause() {
 		if (!this.running || !this.alive || this.paused || this.teaching) return;
 		this.paused = true;
-		showSheet(this.el('menu'));
+		this.adapters.sheets.show(this.el('menu'));
 		this.patchHud({ sheet: 'menu' });
 	}
 
 	resume() {
 		this.paused = false;
-		hideSheet(this.el('menu'));
+		this.adapters.sheets.hide(this.el('menu'));
 		this.patchHud({ sheet: null });
 	}
 
 	async restart() {
 		this.paused = false;
-		await hideSheet(this.el('menu'));
+		await this.adapters.sheets.hide(this.el('menu'));
 		this.begin(this.playMode);
 	}
 
@@ -962,23 +952,23 @@ export class GameEngine {
 		this.running = false;
 		this.alive = false;
 		this.teaching = false;
-		void setKeepAwake(false);
-		setCoach(this.el('coach'), false);
+		void this.adapters.keepAwake.set(false);
+		this.adapters.sheets.setCoach(this.el('coach'), false);
 		this.patchHud({ coachOn: false });
 		this.reset();
-		await hideSheet(this.el('menu'));
-		showSheet(this.el('start'));
+		await this.adapters.sheets.hide(this.el('menu'));
+		this.adapters.sheets.show(this.el('start'));
 		this.patchHud({ sheet: 'start' });
 	}
 
 	begin(mode: PlayMode = 'endless') {
-		if (this.sound) audio();
-		void setKeepAwake(true);
-		hideSheet(this.el('start'));
-		hideSheet(this.el('over'));
-		hideSheet(this.el('options'));
-		hideSheet(this.el('menu'));
-		hideSheet(this.el('lb'));
+		if (this.sound) this.adapters.audio.unlock();
+		void this.adapters.keepAwake.set(true);
+		this.adapters.sheets.hide(this.el('start'));
+		this.adapters.sheets.hide(this.el('over'));
+		this.adapters.sheets.hide(this.el('options'));
+		this.adapters.sheets.hide(this.el('menu'));
+		this.adapters.sheets.hide(this.el('lb'));
 		this.reset();
 		this.running = true;
 		this.playMode = mode === 'daily' ? 'daily' : 'endless';
@@ -987,10 +977,10 @@ export class GameEngine {
 		this.taps = [];
 		this.beat0 = this.beatIdx;
 		this.teaching = !this.taught;
-		setCoach(this.el('coach'), this.teaching);
+		this.adapters.sheets.setCoach(this.el('coach'), this.teaching);
 		this.patchHud({ sheet: null, coachOn: this.teaching });
 		if (!this.teaching) {
-			postStart(this.pid, this.playMode)
+			this.adapters.leaderboard.postStart(this.pid, this.playMode)
 				.then((j) => {
 					this.tok = j.tok || null;
 					if (Number.isInteger(j.seed)) this.rng = mulberry32(j.seed!);
@@ -1004,7 +994,7 @@ export class GameEngine {
 	}
 
 	share() {
-		shareCard({
+		this.adapters.share.shareCard({
 			lastScore: this.lastScore,
 			lastPerfectPct: this.lastPerfectPct,
 			playMode: this.playMode,
