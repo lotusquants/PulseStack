@@ -45,9 +45,8 @@ export function createStorageAdapter(): StoragePort {
 
 export function createAudioAdapter(): AudioPort {
 	return {
-		unlock: () => {
-			audioImpl.audio();
-		},
+		unlock: () => audioImpl.unlock(),
+		setEnabled: (on) => audioImpl.setEnabled(on),
 		tone: audioImpl.tone,
 		tick: audioImpl.tick,
 		chordStab: audioImpl.chordStab,

@@ -17,4 +17,13 @@ export type {
 	ScoreRequest,
 	ScoreResponse,
 } from './lbApi';
-export { drawPulse, drawBlock, drawShard, drawLightShaft, drawVignette, drawFloorGhost } from './draw';
+export {
+	drawPulse,
+	drawBlock,
+	drawShard,
+	drawLightShaft,
+	drawVignette,
+	drawFloorGhost,
+	fillBrickShape,
+	brickRadii,
+} from './draw';

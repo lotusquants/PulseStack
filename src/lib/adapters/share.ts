@@ -12,45 +12,50 @@ export async function shareCard(opts: {
 	c.width = 720;
 	c.height = 900;
 	const g = c.getContext('2d')!;
-	g.fillStyle = '#070A12';
+	g.fillStyle = '#05070F';
 	g.fillRect(0, 0, 720, 900);
-	const rg = g.createRadialGradient(360, 720, 20, 360, 720, 420);
-	rg.addColorStop(0, 'rgba(242,166,90,.22)');
-	rg.addColorStop(1, 'rgba(242,166,90,0)');
+	const rg = g.createRadialGradient(360, 720, 20, 360, 720, 440);
+	rg.addColorStop(0, 'rgba(255,138,61,.28)');
+	rg.addColorStop(1, 'rgba(255,138,61,0)');
 	g.fillStyle = rg;
 	g.fillRect(0, 0, 720, 900);
-	g.fillStyle = '#F4F0E8';
-	g.font = '700 54px "Iowan Old Style",Palatino,Georgia,serif';
+	const cool = g.createRadialGradient(360, 120, 10, 360, 120, 280);
+	cool.addColorStop(0, 'rgba(94,200,224,.1)');
+	cool.addColorStop(1, 'rgba(94,200,224,0)');
+	g.fillStyle = cool;
+	g.fillRect(0, 0, 720, 900);
+
+	g.fillStyle = '#F7F4EE';
+	g.font = '800 52px system-ui,-apple-system,sans-serif';
 	g.textAlign = 'center';
-	g.fillText('Pulse', 318, 120);
-	g.fillStyle = '#F2A65A';
-	g.fillText('Stack', 458, 120);
-	g.fillStyle = '#F2A65A';
-	g.font = '600 160px ui-monospace,monospace';
-	g.fillText(String(lastScore), 360, 380);
-	g.fillStyle = '#8C93A8';
-	g.font = '12px ui-monospace,monospace';
-	g.fillText('HEIGHT', 360, 420);
-	g.fillStyle = '#F3EEE4';
-	g.font = '600 28px system-ui,sans-serif';
-	g.fillText(lastPerfectPct + '% on the peak', 360, 500);
+	g.fillText('Pulse', 300, 118);
+	g.fillStyle = '#FF8A3D';
+	g.fillText('Stack', 448, 118);
+
+	g.fillStyle = '#FF8A3D';
+	g.font = '800 168px system-ui,-apple-system,sans-serif';
+	g.fillText(String(lastScore), 360, 390);
+	g.fillStyle = '#9AA3B8';
+	g.font = '600 13px system-ui,-apple-system,sans-serif';
+	g.fillText('HEIGHT', 360, 430);
+
+	g.fillStyle = '#F7F4EE';
+	g.font = '600 28px system-ui,-apple-system,sans-serif';
+	g.fillText(lastPerfectPct + '% on the peak', 360, 510);
+
 	const sn = SHAPES.find((s) => s.id === shape);
-	g.fillStyle = '#8C93A8';
-	g.font = '14px ui-monospace,monospace';
-	g.fillText(
-		(sn ? sn.name : shape) + ' · ' + who,
-		360,
-		560
-	);
-	g.fillStyle = '#8C93A8';
-	g.font = '12px ui-monospace,monospace';
+	g.fillStyle = '#9AA3B8';
+	g.font = '500 15px system-ui,-apple-system,sans-serif';
+	g.fillText((sn ? sn.name : shape) + ' · ' + who, 360, 570);
+
+	g.fillStyle = '#9AA3B8';
+	g.font = '500 13px system-ui,-apple-system,sans-serif';
 	g.fillText('pulsestack', 360, 820);
 
 	const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
 	if (!blob) return;
 	const file = new File([blob], 'pulsestack.png', { type: 'image/png' });
-	const text =
-		`PulseStack ${lastScore} · ${lastPerfectPct}% peak`;
+	const text = `PulseStack ${lastScore} · ${lastPerfectPct}% peak`;
 
 	if (Cap.isNative) {
 		try {
@@ -79,5 +84,5 @@ export async function shareCard(opts: {
 	a.href = URL.createObjectURL(blob);
 	a.download = 'pulsestack.png';
 	a.click();
-	setTimeout(() => URL.revokeObjectURL(a.href), 2e3);
+	URL.revokeObjectURL(a.href);
 }

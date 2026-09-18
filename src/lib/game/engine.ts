@@ -14,6 +14,7 @@ import {
 	drawPulse,
 	drawShard,
 	drawVignette,
+	fillBrickShape,
 	headlineFor,
 	makeCryptoRng,
 	mulberry32,
@@ -276,7 +277,7 @@ export class GameEngine {
 		this.sound = on;
 		this.adapters.storage.save('sound', on ? '1' : '0');
 		this.patchHud({ sound: on });
-		if (on) this.adapters.audio.unlock();
+		this.adapters.audio.setEnabled(on);
 	}
 
 	setShape(id: ShapeId) {
@@ -678,8 +679,8 @@ export class GameEngine {
 			this.H * 0.7
 		);
 		if (atRisk) {
-			g.addColorStop(0, `rgba(111,175,198,${0.08 + glow * 0.35})`);
-			g.addColorStop(1, 'rgba(111,175,198,0)');
+			g.addColorStop(0, `rgba(94,200,224,${0.08 + glow * 0.35})`);
+			g.addColorStop(1, 'rgba(94,200,224,0)');
 		} else {
 			g.addColorStop(0, `rgba(242,166,90,${glow})`);
 			g.addColorStop(1, 'rgba(242,166,90,0)');
@@ -700,7 +701,7 @@ export class GameEngine {
 					if (m.x > this.W + 4) m.x = -4;
 				}
 				ctx.globalAlpha = m.baseA;
-				ctx.fillStyle = atRisk ? 'rgba(158,208,224,1)' : 'rgba(255,210,122,1)';
+				ctx.fillStyle = atRisk ? 'rgba(168,228,240,1)' : 'rgba(255,224,138,1)';
 				ctx.beginPath();
 				ctx.arc(m.x, m.y, m.r, 0, 7);
 				ctx.fill();
@@ -711,12 +712,12 @@ export class GameEngine {
 		const edgeOn = this.edgeGlow > 0.02;
 		if (edgeOn) {
 			const eg = ctx.createLinearGradient(0, 0, 0, this.H);
-			eg.addColorStop(0, `rgba(255,210,122,${this.edgeGlow * 0.2})`);
-			eg.addColorStop(0.5, 'rgba(255,210,122,0)');
-			eg.addColorStop(1, `rgba(255,210,122,${this.edgeGlow * 0.18})`);
+			eg.addColorStop(0, `rgba(255,224,138,${this.edgeGlow * 0.22})`);
+			eg.addColorStop(0.5, 'rgba(255,224,138,0)');
+			eg.addColorStop(1, `rgba(255,138,61,${this.edgeGlow * 0.2})`);
 			ctx.fillStyle = eg;
 			ctx.fillRect(0, 0, this.W, this.H);
-			ctx.strokeStyle = `rgba(255,210,122,${this.edgeGlow * 0.35})`;
+			ctx.strokeStyle = `rgba(255,224,138,${this.edgeGlow * 0.4})`;
 			ctx.lineWidth = 3;
 			ctx.strokeRect(2, 2, this.W - 4, this.H - 4);
 		}
@@ -748,7 +749,8 @@ export class GameEngine {
 					a = 0.16 * Math.max(0, 1 - (i - n) / 24);
 				if (a < 0.01) break;
 				ctx.fillStyle = `hsl(${this.blockHue(i)} 40% 60% / ${a})`;
-				ctx.fillRect(Math.round(this.W / 2 - gw / 2), y, Math.max(1, Math.round(gw)), BH - 1);
+				const gwPx = Math.max(1, Math.round(gw));
+				fillBrickShape(ctx, Math.round(this.W / 2 - gwPx / 2), y, gwPx, BH - 1);
 			}
 		}
 		for (let i = 0; i < this.blocks.length; i++) {
@@ -784,7 +786,7 @@ export class GameEngine {
 			if (!this.reduceMotion) f.y -= 0.55;
 			ctx.globalAlpha = Math.max(0, f.a);
 			ctx.fillStyle = f.col;
-			ctx.font = '700 14px "Iowan Old Style",Palatino,Georgia,serif';
+			ctx.font = '700 14px system-ui, -apple-system, sans-serif';
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
 			ctx.fillText(f.text, this.W / 2, f.y);
@@ -816,7 +818,7 @@ export class GameEngine {
 		ctx.fillStyle = INK + '.25)';
 		ctx.fillRect(this.W / 2 - fw / 2, this.H - 6, fw, 2);
 		if (atRisk) {
-			ctx.fillStyle = 'rgba(111,175,198,.06)';
+			ctx.fillStyle = 'rgba(94,200,224,.08)';
 			ctx.fillRect(0, 0, this.W, this.H);
 		}
 		drawVignette(ctx, this.W, this.H, 0.2);
@@ -1068,7 +1070,7 @@ export class GameEngine {
 	}
 
 	begin() {
-		if (this.sound) this.adapters.audio.unlock();
+		if (this.sound) this.adapters.audio.setEnabled(true);
 		void this.adapters.keepAwake.set(true);
 		this.adapters.sheets.hide(this.el('start'));
 		this.adapters.sheets.hide(this.el('over'));

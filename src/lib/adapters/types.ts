@@ -14,9 +14,10 @@ export type StoragePort = {
 	utcDay: () => string;
 };
 
-/** Web Audio SFX. */
+/** Soft ambient bed + dopamine UI clicks (Web Audio). */
 export type AudioPort = {
 	unlock: () => void;
+	setEnabled: (on: boolean) => void;
 	tone: (kind: string, n: number, sound: boolean, feverTier: number) => void;
 	tick: (sound: boolean, feverTier: number) => void;
 	chordStab: (tier: number, sound: boolean) => void;

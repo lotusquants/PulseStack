@@ -1,9 +1,10 @@
 export { MIN_PERIOD, REST } from './replay';
 export const BH = 16;
-export const INK = 'rgba(244,240,232,';
-export const P = '#F2A65A';
-export const HOT = '#FFD27A';
-export const COOL = 'rgba(111,175,198,.55)';
+export const GROUND = '#05070F';
+export const INK = 'rgba(247,244,238,';
+export const P = '#FF8A3D';
+export const HOT = '#FFE08A';
+export const COOL = 'rgba(94,200,224,.55)';
 export const TIER_NAME = ['', 'WARM', 'HOT', 'FEVER', 'OVERDRIVE'] as const;
 export const SHAPES = [
 	{ id: 'ghost' as const, name: 'Ghost' },
