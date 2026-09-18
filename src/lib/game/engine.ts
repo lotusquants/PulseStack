@@ -13,6 +13,7 @@ import {
 	makeCryptoRng,
 	mulberry32,
 	periodFor,
+	snapThresh,
 	tierOf,
 	type LbEntry,
 	type PlayMode,
@@ -274,11 +275,6 @@ export class GameEngine {
 		return (30 + n * 4) % 360; // rainbow, orange up
 	}
 
-	private snapThresh(n: number) {
-		const bonus = Math.min(this.streak, 8) * 0.008 * (n >= 30 ? 0.5 : 1);
-		return Math.max(0.85, 0.94 - bonus);
-	}
-
 	private syncStreakHud() {
 		const streakText =
 			this.streak >= 2
@@ -361,7 +357,7 @@ export class GameEngine {
 		const n = this.blocks.length,
 			floor = this.blocks[n - 1].w;
 		let q = this.pulseNow;
-		if (q > this.snapThresh(n)) q = 1;
+		if (q > snapThresh(n, this.streak)) q = 1;
 		q = Math.max(q, 0.04);
 		const w = floor * q,
 			kind = q === 1 ? 'perfect' : q > 0.7 ? 'ok' : 'bad';
@@ -533,7 +529,7 @@ export class GameEngine {
 		}
 		this.patchBoard('Submitting…');
 		this.adapters.leaderboard
-			.postScore({ pid: this.pid, tok: t, name, n, taps: this.taps })
+			.postScore({ pid: this.pid, tok: t, name, n, taps: this.taps, w: Math.round(this.W) })
 			.then((res) => {
 				if (res.error || !Array.isArray(res.lifetime) || !Array.isArray(res.daily)) {
 					this.patchBoard("Couldn't reach the board");
@@ -776,7 +772,7 @@ export class GameEngine {
 			c = prev.getContext('2d')!;
 		c.clearRect(0, 0, w, h);
 		const floor = w * 0.58,
-			bh = Math.round(h / 36),
+			bh = BH,
 			gy = h * 0.78;
 		for (let i = 0; i < 3; i++) {
 			c.fillStyle = `hsl(${this.blockHue(i)} 72% ${56 - i}%)`;
@@ -816,7 +812,7 @@ export class GameEngine {
 			if (!w) continue;
 			c.clearRect(0, 0, w, h);
 			const floor = w * 0.58,
-				bh = Math.round(h / 36),
+				bh = BH,
 				gy = h * 0.74;
 			for (let i = 0; i < 3; i++) {
 				c.fillStyle = `hsl(${this.blockHue(i)} 72% ${56 - i}%)`;

@@ -17,6 +17,8 @@ export type ScoreRequest = {
 	name: string;
 	n: number;
 	taps: [number, number][];
+	/** canvas width in CSS px; lets the server replay the tower's width */
+	w: number;
 };
 
 export type ScoreResponse = {

@@ -114,7 +114,9 @@ export default {
 			if (!row || row.used || row.pid !== pid || now - row.t0 > TOKEN_TTL) {
 				return J({ error: 'bad token' }, 403);
 			}
-			const r = replay(row.seed, b.taps);
+			// clamp so a bogus width can't buy a lenient death line
+			const canvasW = Math.min(1600, Math.max(280, Number(b.w) || 0));
+			const r = replay(row.seed, b.taps, canvasW);
 			if (typeof r === 'string' || !Array.isArray(b.taps) || b.taps.length !== n) {
 				return J({ error: 'bad taps' }, 403);
 			}

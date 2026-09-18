@@ -1,4 +1,4 @@
-import { COOL, INK } from './constants';
+import { BH, COOL, INK } from './constants';
 import type { ShapeId } from './constants';
 
 export function drawPulse(
@@ -27,7 +27,7 @@ export function drawPulse(
 			: hot
 				? `hsl(${hue} 85% 78%)`
 				: `hsl(${hue} 72% 62%)`;
-	const bh = Math.max(10, Math.round(h / 36));
+	const bh = BH; // the pulse bar is the same height as the block it becomes
 	if (id === 'circle') {
 		const cy = h * 0.2,
 			rMax = w * 0.09,
@@ -79,19 +79,11 @@ export function drawPulse(
 		c.fill();
 	} else {
 		const y = top - bh;
+		// the fill is exactly the cut you'd get: no halo, no outline
 		const gw = Math.max(2, floor * p);
-		if (hot && !dead) {
-			c.fillStyle = 'rgba(255,210,122,.12)';
-			c.fillRect(Math.round(cx - floor / 2) - 4, y - 4, Math.round(floor) + 8, bh + 6);
-		}
 		c.fillStyle = col;
-		c.globalAlpha = dead ? 0.22 : 0.38 + 0.55 * p;
+		c.globalAlpha = dead ? 0.25 : 0.45 + 0.4 * p;
 		c.fillRect(Math.round(cx - gw / 2), y, Math.round(gw), bh - 1);
 		c.globalAlpha = 1;
-		if (p > 0.55) {
-			c.strokeStyle = col;
-			c.lineWidth = hot ? 1.75 : 1;
-			c.strokeRect(Math.round(cx - gw / 2) + 0.5, y + 0.5, Math.max(1, Math.round(gw)) - 1, bh - 2);
-		}
 	}
 }

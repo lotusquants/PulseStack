@@ -64,6 +64,22 @@ describe('replay', () => {
 		expect(human.ms).toBeLessThan(60e3);
 	});
 
+	it('replays width: sloppy taps kill the tower, honest ones survive', () => {
+		// 60 taps at phase 0.2 keep ~35% each: dead within a few blocks
+		const sloppy = replay(
+			7,
+			sim(7, 60, 0).map(([b]) => [b, 0.2] as [number, number]),
+			390
+		);
+		expect(sloppy).toBe('dead tower');
+		const fine = replay(7, sim(7, 60, 40), 390);
+		if (typeof fine === 'string') throw new Error(fine);
+		expect(fine.w).toBeGreaterThan(7);
+		// the fatal tap itself still counts: only taps after death are impossible
+		const oneBad = replay(7, [[0, 0.02]], 390);
+		expect(typeof oneBad).toBe('object');
+	});
+
 	it('rejects bad taps', () => {
 		expect(
 			replay(7, [
