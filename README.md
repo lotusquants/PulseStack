@@ -34,9 +34,9 @@ Every push to `main` / `master` runs [`.github/workflows/deploy.yml`](.github/wo
 
 Quick version:
 
-1. Create Cloudflare API token (Workers edit + Pages edit) → secret `CLOUDFLARE_API_TOKEN`
+1. Create Cloudflare API token (Workers edit) → secret `CLOUDFLARE_API_TOKEN`
 2. Secret `CLOUDFLARE_ACCOUNT_ID`
-3. Variable `PUBLIC_LB_URL` = your Worker URL (set after first Worker deploy if needed)
+3. Variable `PUBLIC_LB_URL` = your leaderboard Worker URL (set after first Worker deploy if needed)
 4. Push to `master` (or Actions → **deploy** → Run workflow)
 
 Local one-off (optional, uses your own Wrangler login):
