@@ -6,14 +6,14 @@
  *   POST /score   {tok, pid, name, n, taps} → {lifetime, daily}
  * taps = [[beat, phase], ...] replayed against the seed (anti-cheat).
  */
-import { replay } from '../../src/lib/game/replay';
+import { replay } from '../../src/lib/core/replay';
 import type {
 	LbEntry,
 	ScoreRequest,
 	ScoreResponse,
 	StartRequest,
 	StartResponse,
-} from '../../src/lib/game/lbApi';
+} from '../../src/lib/core/lbApi';
 
 export interface Env {
 	DB: D1Database;

@@ -71,7 +71,7 @@ npm run cap:sync   # if shipping Capacitor
 | `POST` | `/start` | `{ pid, mode? }`              | `{ tok, seed }`            |
 | `POST` | `/score` | `{ tok, pid, name, n, taps }` | `{ lifetime, daily }`      |
 
-`taps` is replayed against `seed` (anti-cheat). Shared logic lives in `src/lib/game/replay.ts` (imported by both the app and `worker/src/index.ts`).
+`taps` is replayed against `seed` (anti-cheat). Shared logic lives in `src/lib/core/replay.ts` (imported by both the app and `worker/src/index.ts`).
 
 ## Local Worker
 

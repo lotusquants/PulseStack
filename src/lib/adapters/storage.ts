@@ -1,3 +1,5 @@
+import type { Unlocks } from './types';
+
 export const pref = (k: string, d: string): string => {
 	try {
 		const v = localStorage.getItem('ps-' + k);
@@ -15,7 +17,7 @@ export const save = (k: string, v: string | number) => {
 	}
 };
 
-export type Unlocks = { skins: Set<string>; palette: boolean };
+export type { Unlocks };
 
 export function loadUnlocks(): Unlocks {
 	try {

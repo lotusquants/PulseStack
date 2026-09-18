@@ -1,5 +1,5 @@
 import { Cap } from './platform';
-import { SHAPES, type PlayMode, type ShapeId } from './constants';
+import { SHAPES, type PlayMode, type ShapeId } from '../core/constants';
 
 export async function shareCard(opts: {
 	lastScore: number;

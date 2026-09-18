@@ -1,5 +1,5 @@
-import type { PlayMode } from './constants';
-import type { LbEntry, ScoreRequest, ScoreResponse, StartResponse } from './lbApi';
+import type { PlayMode } from '../core/constants';
+import type { LbEntry, ScoreRequest, ScoreResponse, StartResponse } from '../core/lbApi';
 import { LB_URL } from './platform';
 import { pref, save } from './storage';
 
@@ -58,4 +58,9 @@ export function lbAddLocal(pid: string, mode: PlayMode, name: string, n: number)
 	const top = l.slice(0, 10);
 	save(lbKey(mode), JSON.stringify(top));
 	return lbRank(top, pid, n);
+}
+
+export function saveBoards(lifetime: LbEntry[], daily: LbEntry[]) {
+	save(lbKey('endless'), JSON.stringify(lifetime));
+	save(lbKey('daily'), JSON.stringify(daily));
 }
