@@ -47,6 +47,8 @@ export function createAudioAdapter(): AudioPort {
 	return {
 		unlock: () => audioImpl.unlock(),
 		setEnabled: (on) => audioImpl.setEnabled(on),
+		setFever: (tier) => audioImpl.setFever(tier),
+		anticipate: audioImpl.anticipate,
 		tone: audioImpl.tone,
 		tick: audioImpl.tick,
 		chordStab: audioImpl.chordStab,

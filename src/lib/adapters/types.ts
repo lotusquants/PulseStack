@@ -14,11 +14,15 @@ export type StoragePort = {
 	utcDay: () => string;
 };
 
-/** Soft ambient bed + dopamine UI clicks (Web Audio). */
+/** Musical dopamine SFX + reactive ambient bed (Web Audio). */
 export type AudioPort = {
 	unlock: () => void;
 	setEnabled: (on: boolean) => void;
-	tone: (kind: string, n: number, sound: boolean, feverTier: number) => void;
+	setFever: (tier: number) => void;
+	/** Quiet pre-peak cue — call; tick is the response. */
+	anticipate: (sound: boolean, feverTier: number) => void;
+	/** streak: ladder index for perfects (1+); 0 for ok/bad. */
+	tone: (kind: string, streak: number, sound: boolean, feverTier: number) => void;
 	tick: (sound: boolean, feverTier: number) => void;
 	chordStab: (tier: number, sound: boolean) => void;
 	coolCue: (sound: boolean) => void;

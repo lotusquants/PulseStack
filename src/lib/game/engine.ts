@@ -131,6 +131,7 @@ export class GameEngine {
 	private feverTier = 0;
 	private edgeGlow = 0;
 	private pastPeak = false;
+	private pastAnticipate = false;
 	private running = false;
 	private pulseNow = 0;
 	private tNow = 0;
@@ -357,7 +358,9 @@ export class GameEngine {
 		this.maxStreak = 0;
 		this.feverTier = 0;
 		this.edgeGlow = 0;
+		this.adapters.audio.setFever(0);
 		this.pastPeak = false;
+		this.pastAnticipate = false;
 		this.alive = true;
 		this.camKick = 0;
 		this.shakeX = 0;
@@ -377,6 +380,7 @@ export class GameEngine {
 		if (tier >= 2) this.edgeGlow = 1;
 		if (tier >= 3) this.impulseChroma(1.2);
 		this.pushFloat(TIER_NAME[tier], y - 20, tier >= 4 ? '#FFE8A8' : HOT);
+		this.adapters.audio.setFever(tier);
 		this.adapters.audio.chordStab(tier, this.sound);
 		this.adapters.haptics.pulse(tier >= 3 ? [10, 16, 22] : 14);
 	}
@@ -390,6 +394,7 @@ export class GameEngine {
 		this.feverTier = 0;
 		this.streak = 0;
 		this.edgeGlow *= 0.4;
+		this.adapters.audio.setFever(0);
 	}
 
 	tap() {
@@ -408,7 +413,8 @@ export class GameEngine {
 			kind = q === 1 ? 'perfect' : q > 0.7 ? 'ok' : 'bad';
 
 		if (this.teaching) {
-			this.adapters.audio.tone(kind, n, this.sound, this.feverTier);
+			const teachStreak = kind === 'perfect' ? 1 : 0;
+			this.adapters.audio.tone(kind, teachStreak, this.sound, this.feverTier);
 			if (kind === 'perfect') {
 				this.taught = true;
 				this.adapters.storage.save('taught', '1');
@@ -446,16 +452,17 @@ export class GameEngine {
 		}
 
 		this.taps.push([this.beatIdx - this.beat0, phase]);
-		this.adapters.audio.tone(kind, n, this.sound, this.feverTier);
 		if (kind === 'perfect') {
 			this.streak++;
 			this.perfects++;
 			this.maxStreak = Math.max(this.maxStreak, this.streak);
+			this.adapters.audio.tone(kind, this.streak, this.sound, this.feverTier);
 			const next = tierOf(this.streak);
 			if (next > this.feverTier) this.applyFeverEnter(next, this.towerTopY(n));
 			this.applyHitFeel('perfect');
 			this.adapters.haptics.pulse([8, 12, 16]);
 		} else {
+			this.adapters.audio.tone(kind, 0, this.sound, this.feverTier);
 			this.onStreakBreak(this.towerTopY(n));
 			this.applyHitFeel(kind === 'bad' ? 'bad' : 'ok');
 			if (q > 0.55)
@@ -643,9 +650,22 @@ export class GameEngine {
 				this.beatLen = periodFor(this.running ? this.blocks.length : 1, this.rng, MIN_PERIOD, REST);
 				this.tapped = false;
 				this.pastPeak = false;
+				this.pastAnticipate = false;
 			}
 		this.tNow = (now - this.beatStart) / this.beatLen;
 		this.pulseNow = 0.5 - 0.5 * Math.cos(2 * Math.PI * this.tNow);
+		if (
+			this.running &&
+			this.alive &&
+			!this.paused &&
+			!this.tapped &&
+			this.tNow >= 0.38 &&
+			this.tNow < 0.5 &&
+			!this.pastAnticipate
+		) {
+			this.pastAnticipate = true;
+			this.adapters.audio.anticipate(this.sound, this.feverTier);
+		}
 		if (this.running && this.alive && !this.paused && this.tNow >= 0.5 && !this.pastPeak) {
 			this.pastPeak = true;
 			this.adapters.audio.tick(this.sound, this.feverTier);
